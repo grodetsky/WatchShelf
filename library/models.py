@@ -2,38 +2,45 @@ from django.db import models
 from django.contrib.auth.models import User
 
 
+class ItemType(models.TextChoices):
+    TV = 'TV', 'TV Series'
+    ANIME = 'AN', 'Anime'
+    MOVIE = 'MV', 'Movie'
+
+
 class Genre(models.Model):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, unique=True)
+
+    class Meta:
+        ordering = ['name']
 
     def __str__(self):
         return self.name
 
 
 class Item(models.Model):
-    ITEM_TYPES = [
-        ('TV', 'TV Series'),
-        ('AN', 'Anime'),
-        ('MV', 'Movie'),
-    ]
-
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=200, db_index=True)
     description = models.TextField(blank=True)
-    item_type = models.CharField(max_length=2, choices=ITEM_TYPES)
+    item_type = models.CharField(max_length=2, choices=ItemType.choices, default=ItemType.TV)
     genres = models.ManyToManyField(Genre, related_name='items')
     release_date = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title
 
 
 class UserItem(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_items')
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='item_users')
     watched = models.BooleanField(default=False)
+    progress = models.PositiveIntegerField(default=0)
     added_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ('user', 'item')
+        ordering = ['-added_at']
 
     def __str__(self):
         return f"{self.user.username} - {self.item.title}"

@@ -3,9 +3,9 @@ from django.contrib.auth.models import User
 
 
 class ItemType(models.TextChoices):
-    TV = 'TV', 'TV Series'
-    ANIME = 'AN', 'Anime'
     MOVIE = 'MV', 'Movie'
+    TV_SERIES = 'TVS', 'TV Series'
+    ANIME = 'AN', 'Anime'
 
 
 class Genre(models.Model):
@@ -21,7 +21,7 @@ class Genre(models.Model):
 class Item(models.Model):
     title = models.CharField(max_length=200, db_index=True)
     description = models.TextField(blank=True)
-    item_type = models.CharField(max_length=2, choices=ItemType.choices, default=ItemType.TV)
+    item_type = models.CharField(max_length=3, choices=ItemType.choices, default=ItemType.MOVIE)
     genres = models.ManyToManyField(Genre, related_name='items')
     release_date = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

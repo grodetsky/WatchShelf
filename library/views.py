@@ -1,10 +1,25 @@
-from django.shortcuts import render, get_object_or_404, Http404
+from django.shortcuts import render, redirect, get_object_or_404, Http404
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib import messages
 from .models import Item
 from .constants import ITEM_TYPE_MAP, PAGE_TITLE_MAP
 
 
 def index(request):
     return render(request, 'library/index.html')
+
+
+def register(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            username = form.cleaned_data.get('username')
+            messages.success(request, f'Account created for {username}! You can now log in.')
+            return redirect('login')
+    else:
+        form = UserCreationForm()
+    return render(request, 'library/register.html', {'form': form})
 
 
 def catalog_view(request, media_type):

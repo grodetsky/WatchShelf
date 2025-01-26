@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="container my-5">
+    <h2>Welcome, {{ user.username }}!</h2>
+    <p><strong>Email:</strong> {{ user.email }}</p>
+
+    <h3>Your Watchlist</h3>
+    <ul>
+      {% for user_item in user.user_items.all %}
+        <li>
+          <strong>{{ user_item.item.title }}</strong> 
+          — Watched: {{ user_item.watched }} 
+          — Progress: {{ user_item.progress }}
+        </li>
+      {% empty %}
+        <li>No items in your watchlist yet.</li>
+      {% endfor %}
+    </ul>
+
+    <h3>Favorites</h3>
+    <p>Coming soon...</p>
+  </div>
+{% endblock %}

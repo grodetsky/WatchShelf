@@ -18,7 +18,7 @@
           <a class="nav-link" href="{% url 'catalog_view' 'tvseries' %}">TV Series</a>
           <a class="nav-link" href="{% url 'catalog_view' 'anime' %}">Anime</a>
           {% if user.is_authenticated %}
-            <span class="navbar-text">Hello, {{ user.username }}</span>
+            <a class="nav-link" href="{% url 'profile' %}">Hello, {{ user.username }}</a>
             <form method="post" action="{% url 'logout' %}" style="display: inline;">
               {% csrf_token %}
               <button type="submit" class="btn btn-link nav-link" style="display: inline; padding: 0;">Logout</button>

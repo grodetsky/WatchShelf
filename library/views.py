@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404, Http404
+from django.contrib.auth.decorators import login_required
 from .forms import CustomUserCreationForm
 from django.contrib import messages
 from .models import Item
@@ -19,6 +20,11 @@ def register(request):
     else:
         form = CustomUserCreationForm()
     return render(request, 'library/register.html', {'form': form})
+
+
+@login_required
+def profile(request):
+    return render(request, 'library/profile.html')
 
 
 def catalog_view(request, media_type):

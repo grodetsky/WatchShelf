@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h2>{{ page_title }}</h2>
+
+  <div class="row">
+    {% for item in items %}
+      <div class="col-md-4 mb-4">
+        <div class="card">
+          {% if item.poster_path %}
+            <img src="https://image.tmdb.org/t/p/w500{{ item.poster_path }}" class="card-img-top" alt="{{ item.display_title }}">
+          {% endif %}
+          <div class="card-body">
+            <h5 class="card-title">{{ item.display_title }}</h5>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endblock %}

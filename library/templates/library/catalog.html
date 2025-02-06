@@ -1,12 +1,78 @@
 {% extends 'base.html' %}
 
 {% block content %}
+  <style>
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+
+    .col-custom {
+      flex: 0 0 calc(20%);
+      max-width: calc(20%);
+      padding: 10px;
+    }
+
+    .card {
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .card-img-top {
+      height: 280px;
+      object-fit: cover;
+      border-top-left-radius: 15px;
+      border-top-right-radius: 15px;
+    }
+
+    .card-body {
+      text-align: center;
+      padding: 15px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    @media (max-width: 1200px) {
+      .col-custom {
+        flex: 0 0 calc(25%);
+        max-width: calc(25%);
+      }
+    }
+
+    @media (max-width: 992px) {
+      .col-custom {
+        flex: 0 0 calc(33.33%);
+        max-width: calc(33.33%);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .col-custom {
+        flex: 0 0 calc(50%);
+        max-width: calc(50%);
+      }
+    }
+
+    @media (max-width: 576px) {
+      .col-custom {
+        flex: 0 0 100%;
+        max-width: 100%;
+      }
+    }
+  </style>
+
   <h2>{{ page_title }}</h2>
 
   <div class="row">
     {% for item in items %}
-      <div class="col-md-4 mb-4">
-        <div class="card">
+      <div class="col-custom">
+        <div class="card h-100">
           {% if item.poster_path %}
             <img src="https://image.tmdb.org/t/p/w500{{ item.poster_path }}" class="card-img-top" alt="{{ item.display_title }}">
           {% endif %}
@@ -17,4 +83,5 @@
       </div>
     {% endfor %}
   </div>
+
 {% endblock %}

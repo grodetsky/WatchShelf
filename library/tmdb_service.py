@@ -8,12 +8,12 @@ movie_api = Movie()
 tv_api = TV()
 
 
-def get_popular_media_items(media_type="movie"):
+def get_popular_media_items(media_type="movie", page=1):
     try:
         if media_type == "movie":
-            return movie_api.popular()
+            return movie_api.popular(page=page)
         elif media_type == "tv":
-            return tv_api.popular()
+            return tv_api.popular(page=page)
     except Exception as e:
         print(f"Error fetching TMDb data: {e}")
         return []

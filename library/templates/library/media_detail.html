@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="container mt-4">
+    <div class="row">
+      <div class="col-md-4">
+        {% if media.poster_path %}
+          <img src="https://image.tmdb.org/t/p/w500{{ media.poster_path }}" class="img-fluid rounded" alt="{{ media_display }}">
+        {% else %}
+          <img src="https://placehold.co/500x750" class="img-fluid rounded" alt="No image">
+        {% endif %}
+      </div>
+      <div class="col-md-8">
+        <h2>{{ media_display }}</h2>
+        <p><strong>Release Date:</strong> {{ release_date }}</p>
+        <p><strong>Genres:</strong>
+          {% if media.genres %}
+            {% for genre in media.genres %}
+              {{ genre.name }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+          {% else %}
+            No genres available
+          {% endif %}
+        </p>
+        <p><strong>Overview:</strong> {{ media.overview|default:"No description available." }}</p>
+        <p><strong>Rating:</strong> ⭐ {{ media.vote_average|default:"N/A" }}/10 ({{ media.vote_count|default:"0" }} votes)</p>
+      </div>
+    </div>
+  </div>
+{% endblock %}

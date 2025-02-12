@@ -1,4 +1,6 @@
-from django.shortcuts import render, Http404
+from django.shortcuts import render, redirect, Http404
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib import messages
 from .tmdb_service import get_popular_media_items, get_media_details
 
 PAGE_TITLE_MAP = {
@@ -48,3 +50,16 @@ def media_detail_view(request, media_type, media_id):
         'media_display': media_display,
         'release_date': release_date,
     })
+
+
+def signup(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            username = form.cleaned_data.get('username')
+            messages.success(request, f'Account created for {username}! You can now log in.')
+            return redirect('login')
+    else:
+        form = UserCreationForm()
+    return render(request, 'library/signup.html', {'form': form})

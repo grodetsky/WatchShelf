@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, Http404
 from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .tmdb_service import get_popular_media_items, get_media_details
 
@@ -63,3 +64,8 @@ def signup(request):
     else:
         form = UserCreationForm()
     return render(request, 'library/signup.html', {'form': form})
+
+
+@login_required
+def profile(request):
+    return render(request, 'library/profile.html')

@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        {% if details.poster_path %}
+        <img src="https://image.tmdb.org/t/p/w500{{ details.poster_path }}" class="img-fluid border rounded shadow-sm" alt="{{ title }}">
+        {% else %}
+        <img src="https://placehold.co/500x750" class="img-fluid border rounded shadow-sm" alt="No image">
+        {% endif %}
+    </div>
+
+    <div class="col-md-8">
+        <h1 class="mb-3">{{ title }}</h1>
+
+        <p class="lead text-muted">
+            {% if media_type == 'movie' %}
+                Release Date: {{ details.release_date|default:"Unknown" }}
+            {% elif media_type == 'tv' %}
+                First Air Date: {{ details.first_air_date|default:"Unknown" }}
+            {% endif %}
+        </p>
+
+        {% if details.vote_average %}
+        <p><strong>Rating:</strong> ⭐ {{ details.vote_average }} / 10 </p>
+        {% endif %}
+
+        {% if details.genres %}
+        <p><strong>Genres:</strong>
+            {% for genre in details.genres %}
+                {{ genre.name }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </p>
+        {% endif %}
+
+        {% if details.original_language %}
+        <p><strong>Original Language:</strong> {{ details.original_language|upper }}</p>
+        {% endif %}
+
+        {% if media_type == 'movie' and details.runtime %}
+        <p><strong>Duration:</strong> {{ details.runtime }} min</p>
+        {% elif media_type == 'tv' and details.number_of_seasons %}
+        <p><strong>Seasons:</strong> {{ details.number_of_seasons }}, Episodes: {{ details.number_of_episodes }}</p>
+        {% endif %}
+
+        {% if details.status %}
+        <p><strong>Status:</strong> {{ details.status }}</p>
+        {% endif %}
+
+        {% if details.overview %}
+        <p><strong>Overview:</strong> {{ details.overview }}</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

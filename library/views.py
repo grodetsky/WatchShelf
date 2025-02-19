@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .tmdb_service import get_popular_media
+from .tmdb_service import get_popular_media, get_media_details
 
 
 def index(request):
@@ -22,3 +22,13 @@ def catalog_view(request, media_type):
         'page_range': page_range,
     }
     return render(request, 'library/catalog.html', context)
+
+
+def media_detail_view(request, media_type, media_id):
+    details = get_media_details(media_type, media_id)
+    context = {
+        'details': details,
+        'title': getattr(details, 'title', getattr(details, 'name', 'Unknown')),
+        'media_type': media_type,
+    }
+    return render(request, 'library/media_detail.html', context)

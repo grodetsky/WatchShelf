@@ -17,15 +17,15 @@ MEDIA_TYPES = {
 }
 
 
-def get_popular_media(media_type='movie'):
+def get_popular_media(media_type='movie', page=1):
     try:
         if media_type in MEDIA_TYPES:
-            results = MEDIA_TYPES[media_type].popular()
+            results = MEDIA_TYPES[media_type].popular(page=page)
         else:
             logger.error(f"Invalid media type: {media_type}")
             return []
     except Exception as e:
-        logger.error(f"Error fetching popular {media_type}: {e}")
+        logger.error(f"Error fetching popular {media_type} on page {page}: {e}")
         return []
 
     return [

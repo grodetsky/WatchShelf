@@ -1,5 +1,13 @@
 from django.shortcuts import render
+from django.http import Http404
 from .tmdb_service import get_popular_media, get_media_details
+
+VALID_MEDIA_TYPES = {'movie', 'tv'}
+
+
+def validate_media_type(media_type):
+    if media_type not in VALID_MEDIA_TYPES:
+        raise Http404(f"Invalid media type: {media_type}")
 
 
 def index(request):
@@ -7,6 +15,8 @@ def index(request):
 
 
 def catalog_view(request, media_type):
+    validate_media_type(media_type)
+
     try:
         page = max(1, min(int(request.GET.get('page', 1)), 500))
     except ValueError:
@@ -25,7 +35,12 @@ def catalog_view(request, media_type):
 
 
 def media_detail_view(request, media_type, media_id):
+    validate_media_type(media_type)
+
     details = get_media_details(media_type, media_id)
+    if not details:
+        raise Http404("Media not found")
+
     context = {
         'details': details,
         'title': getattr(details, 'title', getattr(details, 'name', 'Unknown')),

@@ -38,6 +38,20 @@ def get_popular_media(media_type='movie', page=1):
     ]
 
 
+def get_total_pages(media_type='movie', query_type='popular'):
+    if media_type in MEDIA_TYPES:
+        media_handler = MEDIA_TYPES[media_type]
+        if hasattr(media_handler, query_type):
+            query_method = getattr(media_handler, query_type)
+            return query_method().total_pages
+        else:
+            logger.error(f"Invalid query type: {query_type}")
+            return 1
+    else:
+        logger.error(f"Invalid media type: {media_type}")
+        return 1
+
+
 def get_media_details(media_type, media_id):
     try:
         if media_type in MEDIA_TYPES:
@@ -56,4 +70,3 @@ def search_movies(query):
 
 def search_tv_shows(query):
     return tv_api.search(query)
-

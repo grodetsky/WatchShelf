@@ -1,8 +1,9 @@
 from django.shortcuts import render
 from django.http import Http404
-from .tmdb_service import get_popular_media, get_media_details
+from .tmdb_service import get_popular_media, get_total_pages, get_media_details
 
 VALID_MEDIA_TYPES = {'movie', 'tv'}
+MAX_PAGES = 500
 
 
 def validate_media_type(media_type):
@@ -17,19 +18,21 @@ def index(request):
 def catalog_view(request, media_type):
     validate_media_type(media_type)
 
+    total_pages = min(get_total_pages(media_type, "popular"), MAX_PAGES)
     try:
-        page = max(1, min(int(request.GET.get('page', 1)), 500))
+        page = max(1, min(int(request.GET.get('page', 1)), total_pages))
     except ValueError:
         page = 1
 
-    page_range = range(max(1, page - 2), min(500, page + 2) + 1)
     media_list = get_popular_media(media_type, page=page)
+    page_range = range(max(1, page - 2), min(total_pages, page + 2) + 1)
 
     context = {
         'media_type': media_type,
         'media_list': media_list,
         'current_page': page,
         'page_range': page_range,
+        'total_pages': total_pages,
     }
     return render(request, 'library/catalog.html', context)
 

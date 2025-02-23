@@ -17,69 +17,63 @@ MEDIA_TYPES = {
 }
 
 
+def log_error(error_message, default_value=None):
+    logger.error(error_message)
+    return default_value
+
+
+def get_media_handler(media_type):
+    if media_type not in MEDIA_TYPES:
+        raise ValueError(f"Invalid media type: {media_type}")
+    return MEDIA_TYPES[media_type]
+
+
 def get_popular_media(media_type='movie', page=1):
     try:
-        if media_type in MEDIA_TYPES:
-            results = MEDIA_TYPES[media_type].popular(page=page)
-        else:
-            logger.error(f"Invalid media type: {media_type}")
-            return []
+        media_handler = get_media_handler(media_type)
+        results = media_handler.popular(page=page)
+        return [
+            {
+                'id': item.id,
+                'title': getattr(item, 'title', getattr(item, 'name', 'Unknown')),
+                'poster_path': item.poster_path
+            }
+            for item in results.results
+        ]
     except Exception as e:
-        logger.error(f"Error fetching popular {media_type} on page {page}: {e}")
-        return []
-
-    return [
-        {
-            'id': item.id,
-            'title': getattr(item, 'title', getattr(item, 'name', 'Unknown')),
-            'poster_path': item.poster_path
-        }
-        for item in results.results
-    ]
+        return log_error(f"Error fetching popular {media_type} on page {page}: {e}", [])
 
 
 def get_total_pages(media_type='movie', query_type='popular'):
-    if media_type in MEDIA_TYPES:
-        media_handler = MEDIA_TYPES[media_type]
-        if hasattr(media_handler, query_type):
-            query_method = getattr(media_handler, query_type)
-            return query_method().total_pages
-        else:
-            logger.error(f"Invalid query type: {query_type}")
-            return 1
-    else:
-        logger.error(f"Invalid media type: {media_type}")
-        return 1
+    try:
+        media_handler = get_media_handler(media_type)
+        if not hasattr(media_handler, query_type):
+            return log_error(f"Invalid query type: {query_type}", 1)
+        query_method = getattr(media_handler, query_type)
+        return query_method().total_pages
+    except Exception as e:
+        return log_error(f"Error fetching total pages for {media_type} using {query_type}: {e}", 1)
 
 
 def get_media_details(media_type, media_id):
     try:
-        if media_type in MEDIA_TYPES:
-            return MEDIA_TYPES[media_type].details(media_id)
-        else:
-            logger.error(f"Invalid media type: {media_type}")
-            return None
+        media_handler = get_media_handler(media_type)
+        return media_handler.details(media_id)
     except Exception as e:
-        logger.error(f"Error fetching details for {media_type} with id {media_id}: {e}")
-        return None
+        return log_error(f"Error fetching details for {media_type} with id {media_id}: {e}", None)
 
 
 def search_media(query, media_type='movie', page=1):
     try:
-        if media_type in MEDIA_TYPES:
-            results = MEDIA_TYPES[media_type].search(query, page=page)
-        else:
-            logger.error(f"Invalid media type: {media_type}")
-            return []
+        media_handler = get_media_handler(media_type)
+        results = media_handler.search(query, page=page)
+        return [
+            {
+                'id': item.id,
+                'title': getattr(item, 'title', getattr(item, 'name', 'Unknown')),
+                'poster_path': item.poster_path
+            }
+            for item in results.results
+        ]
     except Exception as e:
-        logger.error(f"Error searching {media_type} for query '{query}': {e}")
-        return []
-
-    return [
-        {
-            'id': item.id,
-            'title': getattr(item, 'title', getattr(item, 'name', 'Unknown')),
-            'poster_path': item.poster_path
-        }
-        for item in results.results
-    ]
+        return log_error(f"Error searching {media_type} for query '{query}': {e}", [])

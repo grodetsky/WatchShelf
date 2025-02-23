@@ -34,7 +34,7 @@ def get_popular_media(media_type='movie', page=1):
             'title': getattr(item, 'title', getattr(item, 'name', 'Unknown')),
             'poster_path': item.poster_path
         }
-        for item in results
+        for item in results.results
     ]
 
 
@@ -64,9 +64,22 @@ def get_media_details(media_type, media_id):
         return None
 
 
-def search_movies(query):
-    return movie_api.search(query)
+def search_media(query, media_type='movie', page=1):
+    try:
+        if media_type in MEDIA_TYPES:
+            results = MEDIA_TYPES[media_type].search(query, page=page)
+        else:
+            logger.error(f"Invalid media type: {media_type}")
+            return []
+    except Exception as e:
+        logger.error(f"Error searching {media_type} for query '{query}': {e}")
+        return []
 
-
-def search_tv_shows(query):
-    return tv_api.search(query)
+    return [
+        {
+            'id': item.id,
+            'title': getattr(item, 'title', getattr(item, 'name', 'Unknown')),
+            'poster_path': item.poster_path
+        }
+        for item in results.results
+    ]

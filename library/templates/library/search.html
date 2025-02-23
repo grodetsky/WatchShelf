@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ query }}{% endblock %}
+
+{% block content %}
+
+<div class="d-flex align-items-center gap-3 mb-4">
+    <h2 class="mb-0">Search Results</h2>
+
+    <div class="btn-group" role="group">
+        <a href="?q={{ query }}&type=movie" class="btn btn-outline-primary {% if media_type == 'movie' %}active{% endif %}">
+            Movies
+        </a>
+        <a href="?q={{ query }}&type=tv" class="btn btn-outline-primary {% if media_type == 'tv' %}active{% endif %}">
+            TV Shows
+        </a>
+    </div>
+</div>
+
+{% if search_results %}
+<div class="row">
+    {% for media in search_results %}
+    <div class="col-md-3 col-sm-6 mb-4">
+        <a href="{% if media_type == 'movie' %}{% url 'movie_detail' media.id %}{% else %}{% url 'tv_detail' media.id %}{% endif %}" class="text-decoration-none">
+            <div class="card h-100">
+                {% if media.poster_path %}
+                <img src="https://image.tmdb.org/t/p/w500{{ media.poster_path }}" class="card-img-top" alt="{{ media.title }}">
+                {% else %}
+                <img src="https://placehold.co/500x750" class="card-img-top" alt="No image">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title text-center">{{ media.title }}</h5>
+                </div>
+            </div>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="text-muted">No results found for your search.</p>
+{% endif %}
+
+{% endblock %}

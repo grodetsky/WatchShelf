@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.http import Http404
-from .tmdb_service import get_popular_media, get_total_pages, get_media_details
+from .tmdb_service import get_popular_media, get_total_pages, get_media_details, search_media
 
 VALID_MEDIA_TYPES = {'movie', 'tv'}
 MAX_PAGES = 500
@@ -50,3 +50,19 @@ def media_detail_view(request, media_type, media_id):
         'media_type': media_type,
     }
     return render(request, 'library/media_detail.html', context)
+
+
+def search_view(request):
+    query = request.GET.get('q', '').strip()
+    media_type = request.GET.get('type', 'movie')
+
+    search_results = search_media(query, media_type)
+
+    context = {
+        'query': query,
+        'media_type': media_type,
+        'search_results': search_results,
+    }
+
+    return render(request, 'library/search.html', context)
+

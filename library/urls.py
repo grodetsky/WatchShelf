@@ -4,6 +4,11 @@ from . import views
 urlpatterns = [
     path('', views.index, name='index'),
 
-    path('<str:media_type>/', views.catalog_view, name='catalog'),
-    path('<str:media_type>/<int:media_id>/', views.media_detail_view, name='media_detail'),
+    path('movie/', views.catalog_view, {'media_type': 'movie'}, name='movie_catalog'),
+    path('movie/<int:media_id>/', views.media_detail_view, {'media_type': 'movie'}, name='movie_detail'),
+
+    path('tv/', views.catalog_view, {'media_type': 'tv'}, name='tv_catalog'),
+    path('tv/<int:media_id>/', views.media_detail_view, {'media_type': 'tv'}, name='tv_detail'),
+
+    path('search/', views.search_view, name='search'),
 ]

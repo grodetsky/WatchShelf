@@ -18,7 +18,7 @@ def index(request):
 def catalog_view(request, media_type):
     validate_media_type(media_type)
 
-    total_pages = min(get_total_pages(media_type, "popular"), MAX_PAGES)
+    total_pages = min(get_total_pages(media_type, 'popular'), MAX_PAGES)
     try:
         page = max(1, min(int(request.GET.get('page', 1)), total_pages))
     except ValueError:
@@ -56,12 +56,22 @@ def search_view(request):
     query = request.GET.get('q', '').strip()
     media_type = request.GET.get('type', 'movie')
 
-    search_results = search_media(query, media_type)
+    total_pages = min(get_total_pages(media_type, 'search', query), MAX_PAGES)
+    try:
+        page = max(1, min(int(request.GET.get('page', 1)), total_pages))
+    except ValueError:
+        page = 1
+
+    search_results = search_media(query, media_type, page)
+    page_range = range(max(1, page - 2), min(total_pages, page + 2) + 1)
 
     context = {
         'query': query,
         'media_type': media_type,
         'search_results': search_results,
+        'current_page': page,
+        'page_range': page_range,
+        'total_pages': total_pages,
     }
 
     return render(request, 'library/search.html', context)

@@ -44,11 +44,19 @@ def get_popular_media(media_type='movie', page=1):
         return log_error(f"Error fetching popular {media_type} on page {page}: {e}", [])
 
 
-def get_total_pages(media_type='movie', query_type='popular'):
+def get_total_pages(media_type='movie', query_type='popular',  query=None):
     try:
         media_handler = get_media_handler(media_type)
+
+        if query_type == 'search':
+            if not query:
+                return log_error("Query is required for 'search' query_type", 1)
+            response = media_handler.search(query)
+            return response.total_pages
+
         if not hasattr(media_handler, query_type):
             return log_error(f"Invalid query type: {query_type}", 1)
+
         query_method = getattr(media_handler, query_type)
         return query_method().total_pages
     except Exception as e:

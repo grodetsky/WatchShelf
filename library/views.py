@@ -1,5 +1,8 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import Http404
+from django.contrib.auth import login
+from .forms import SignupForm
+from django.contrib import messages
 from .tmdb_service import get_popular_media, get_total_pages, get_media_details, search_media
 
 VALID_MEDIA_TYPES = {'movie', 'tv'}
@@ -75,4 +78,18 @@ def search_view(request):
     }
 
     return render(request, 'library/search.html', context)
+
+
+def signup_view(request):
+    if request.method == 'POST':
+        form = SignupForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            messages.success(request, f'Welcome, {user.username}! Your account has been created.')
+            return redirect('index')
+    else:
+        form = SignupForm()
+
+    return render(request, 'library/signup.html', {'form': form})
 

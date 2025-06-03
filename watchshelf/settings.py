@@ -29,6 +29,9 @@ SECRET_KEY = env("DJANGO_SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool("DEBUG", default=False)
 
+# SECURITY WARNING: keep the TMDB API key secret
+TMDB_API_KEY = env("TMDB_API_KEY")
+
 ALLOWED_HOSTS = []
 
 

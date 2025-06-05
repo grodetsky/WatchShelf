@@ -16,6 +16,8 @@ MEDIA_TYPES = {
     'tv': tv_api
 }
 
+MAX_PAGES = 500
+
 
 def log_error(error_message, default_value=None):
     logger.error(error_message)
@@ -28,10 +30,12 @@ def get_media_handler(media_type):
     return MEDIA_TYPES[media_type]
 
 
-def get_popular_media(media_type='movie'):
+def get_popular_media(media_type='movie', page=1):
     try:
+        page = max(1, min(page, MAX_PAGES))
+
         media_handler = get_media_handler(media_type)
-        results = media_handler.popular()
+        results = media_handler.popular(page=page)
         return [
             {
                 'id': item.id,
@@ -41,7 +45,18 @@ def get_popular_media(media_type='movie'):
             for item in results.results
         ]
     except Exception as e:
-        return log_error(f"Error fetching popular {media_type}: {e}", [])
+        return log_error(f"Error fetching popular {media_type} on page {page}: {e}", [])
+
+
+def get_total_pages(media_type='movie', category='popular'):
+    try:
+        media_handler = get_media_handler(media_type)
+        category_method = getattr(media_handler, category)
+        response = category_method(page=1)
+
+        return min(response.total_pages, MAX_PAGES)
+    except Exception as e:
+        return log_error(f"Error fetching total pages for {category} {media_type}: {e}", 1)
 
 
 def search_movies(query):

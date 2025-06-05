@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h2 class="mb-3">Popular {% if media_type == 'movie' %}Movies{% else %}TV Shows{% endif %}</h2>
+
+<div class="row">
+    {% for media in media_list %}
+    <div class="col-md-3 col-sm-6 mb-4">
+        <a href="#" class="text-decoration-none">
+            <div class="card h-100">
+                {% if media.poster_path %}
+                <img src="https://image.tmdb.org/t/p/w500{{ media.poster_path }}" class="card-img-top" alt="{{ media.title }}">
+                {% else %}
+                <img src="https://placehold.co/500x750" class="card-img-top" alt="No image">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title text-center">{{ media.title }}</h5>
+                </div>
+            </div>
+        </a>
+    </div>
+    {% empty %}
+        <p class="text-muted">No items to display right now.</p>
+    {% endfor %}
+</div>
+
+{% endblock %}

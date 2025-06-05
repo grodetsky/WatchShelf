@@ -16,6 +16,11 @@ MEDIA_TYPES = {
     'tv': tv_api
 }
 
+CATEGORIES = {
+    'movie': ['popular', 'top_rated', 'upcoming', 'now_playing'],
+    'tv': ['popular', 'top_rated', 'on_the_air', 'airing_today']
+}
+
 MAX_PAGES = 500
 
 
@@ -30,12 +35,24 @@ def get_media_handler(media_type):
     return MEDIA_TYPES[media_type]
 
 
-def get_popular_media(media_type='movie', page=1):
+def validate_category(media_type, category):
+    if media_type not in CATEGORIES:
+        raise ValueError(f"Invalid media type: {media_type}")
+    if category not in CATEGORIES[media_type]:
+        raise ValueError(
+            f"Invalid category '{category}' for media type '{media_type}'. Available: {CATEGORIES[media_type]}")
+    return True
+
+
+def get_media_by_category(media_type='movie', category='popular', page=1):
     try:
+        validate_category(media_type, category)
         page = max(1, min(page, MAX_PAGES))
 
         media_handler = get_media_handler(media_type)
-        results = media_handler.popular(page=page)
+        category_method = getattr(media_handler, category)
+        results = category_method(page=page)
+
         return [
             {
                 'id': item.id,
@@ -45,11 +62,13 @@ def get_popular_media(media_type='movie', page=1):
             for item in results.results
         ]
     except Exception as e:
-        return log_error(f"Error fetching popular {media_type} on page {page}: {e}", [])
+        return log_error(f"Error fetching {category} {media_type} on page {page}: {e}", [])
 
 
 def get_total_pages(media_type='movie', category='popular'):
     try:
+        validate_category(media_type, category)
+
         media_handler = get_media_handler(media_type)
         category_method = getattr(media_handler, category)
         response = category_method(page=1)

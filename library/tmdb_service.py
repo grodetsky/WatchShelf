@@ -65,13 +65,33 @@ def get_media_by_category(media_type='movie', category='popular', page=1):
         return log_error(f"Error fetching {category} {media_type} on page {page}: {e}", [])
 
 
-def get_total_pages(media_type='movie', category='popular'):
+def search_media(query, media_type='movie', page=1):
     try:
-        validate_category(media_type, category)
-
         media_handler = get_media_handler(media_type)
-        category_method = getattr(media_handler, category)
-        response = category_method(page=1)
+        results = media_handler.search(query, page=page)
+
+        return [
+            {
+                'id': item.id,
+                'title': getattr(item, 'title', getattr(item, 'name', 'Unknown')),
+                'poster_path': item.poster_path
+            }
+            for item in results.results
+        ]
+    except Exception as e:
+        return log_error(f"Error searching {media_type} for query '{query}': {e}", [])
+
+
+def get_total_pages(media_type='movie', category=None, query=None):
+    try:
+        media_handler = get_media_handler(media_type)
+
+        if query:
+            response = media_handler.search(query, page=1)
+        else:
+            validate_category(media_type, category)
+            category_method = getattr(media_handler, category)
+            response = category_method(page=1)
 
         return min(response.total_pages, MAX_PAGES)
     except Exception as e:

@@ -43,7 +43,6 @@ def validate_category(media_type, category):
             f"Invalid category '{category}' for media type '{media_type}'. Available: {CATEGORIES[media_type]}")
     return True
 
-
 def get_media_by_category(media_type='movie', category='popular', page=1):
     try:
         validate_category(media_type, category)
@@ -96,6 +95,14 @@ def get_total_pages(media_type='movie', category=None, query=None):
         return min(response.total_pages, MAX_PAGES)
     except Exception as e:
         return log_error(f"Error fetching total pages for {category} {media_type}: {e}", 1)
+
+
+def get_media_details(media_type, media_id):
+    try:
+        media_handler = get_media_handler(media_type)
+        return media_handler.details(media_id)
+    except Exception as e:
+        return log_error(f"Error fetching details for {media_type} id {media_id}: {e}", None)
 
 
 def search_movies(query):

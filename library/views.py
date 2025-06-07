@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.http import Http404
-from .tmdb_service import get_media_by_category, search_media, get_total_pages, CATEGORIES
+from .tmdb_service import get_media_by_category, search_media, get_total_pages, get_media_details, CATEGORIES
 
 
 def validate_media_type(media_type):
@@ -11,6 +11,12 @@ def validate_media_type(media_type):
 def validate_category(media_type, category):
     if category not in CATEGORIES[media_type]:
         raise Http404(f"Category '{category}' not available for {media_type}")
+
+
+def validate_media_id(media_id):
+    if not isinstance(media_id, int) or media_id <= 0:
+        raise Http404("Invalid media ID")
+    return media_id
 
 
 def index(request):
@@ -87,3 +93,18 @@ def search_view(request, media_type):
     }
 
     return render(request, 'library/search.html', context)
+
+
+def details_view(request, media_type, media_id):
+    validate_media_type(media_type)
+    validate_media_id(media_id)
+
+    details = get_media_details(media_type, media_id)
+    if not details:
+        raise Http404(f"{media_type.title()} with ID={media_id} not found.")
+
+    context = {
+        'media_type': media_type,
+        'details': details,
+    }
+    return render(request, 'library/details.html', context)

@@ -18,7 +18,7 @@
 <div class="row">
     {% for media in search_results %}
     <div class="col-md-3 col-sm-6 mb-4">
-        <a href="#" class="text-decoration-none">
+        <a href="{% if media_type == 'movie' %}{% url 'movie_details' media.id %}{% else %}{% url 'tv_details' media.id %}{% endif %}" class="text-decoration-none">
             <div class="card h-100">
                 {% if media.poster_path %}
                 <img src="https://image.tmdb.org/t/p/w500{{ media.poster_path }}" class="card-img-top" alt="{{ media.title }}">

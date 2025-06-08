@@ -43,6 +43,7 @@ def validate_category(media_type, category):
             f"Invalid category '{category}' for media type '{media_type}'. Available: {CATEGORIES[media_type]}")
     return True
 
+
 def get_media_by_category(media_type='movie', category='popular', page=1):
     try:
         validate_category(media_type, category)
@@ -103,19 +104,3 @@ def get_media_details(media_type, media_id):
         return media_handler.details(media_id)
     except Exception as e:
         return log_error(f"Error fetching details for {media_type} id {media_id}: {e}", None)
-
-
-def search_movies(query):
-    return movie_api.search(query)
-
-
-def search_tv_shows(query):
-    return tv_api.search(query)
-
-
-def get_movie_details(movie_id):
-    return movie_api.details(movie_id)
-
-
-def get_tv_details(tv_id):
-    return tv_api.details(tv_id)

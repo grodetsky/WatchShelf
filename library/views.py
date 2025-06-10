@@ -1,5 +1,7 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import Http404
+from django.contrib.auth import login
+from .forms import SignUpForm
 from .tmdb_service import get_media_by_category, search_media, get_total_pages, get_media_details, CATEGORIES
 
 
@@ -108,3 +110,15 @@ def details_view(request, media_type, media_id):
         'details': details,
     }
     return render(request, 'library/details.html', context)
+
+
+def signup_view(request):
+    if request.method == "POST":
+        form = SignUpForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect("index")
+    else:
+        form = SignUpForm()
+    return render(request, "library/signup.html", {"form": form})

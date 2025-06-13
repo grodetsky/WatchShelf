@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h2>{{ request.user.username }}'s Profile</h2>
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <ul class="nav nav-tabs border-bottom-0">
+        <li class="nav-item">
+          <a class="nav-link {% if not current_status %}active{% endif %}"
+             href="{% if current_media_type %}{% url 'profile_status' request.user.username current_media_type %}{% else %}{% url 'profile' request.user.username %}{% endif %}">All</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if current_status == 'watched' %}active{% endif %}"
+             href="{% if current_media_type %}{% url 'profile_filter' request.user.username 'watched' current_media_type %}{% else %}{% url 'profile_status' request.user.username 'watched' %}{% endif %}">Watched</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if current_status == 'planned' %}active{% endif %}"
+             href="{% if current_media_type %}{% url 'profile_filter' request.user.username 'planned' current_media_type %}{% else %}{% url 'profile_status' request.user.username 'planned' %}{% endif %}">Planned</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if current_status == 'favorite' %}active{% endif %}"
+             href="{% if current_media_type %}{% url 'profile_filter' request.user.username 'favorite' current_media_type %}{% else %}{% url 'profile_status' request.user.username 'favorite' %}{% endif %}">Favorite</a>
+        </li>
+      </ul>
+    </div>
+
+    <div>
+      <ul class="nav nav-tabs border-bottom-0">
+        <li class="nav-item">
+          <a class="nav-link {% if not current_media_type %}active{% endif %}"
+             href="{% if current_status %}{% url 'profile_status' request.user.username current_status %}{% else %}{% url 'profile' request.user.username %}{% endif %}">All</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if current_media_type == 'movie' %}active{% endif %}"
+             href="{% if current_status %}{% url 'profile_filter' request.user.username current_status 'movie' %}{% else %}{% url 'profile_status' request.user.username 'movie' %}{% endif %}">Movies</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if current_media_type == 'tv' %}active{% endif %}"
+             href="{% if current_status %}{% url 'profile_filter' request.user.username current_status 'tv' %}{% else %}{% url 'profile_status' request.user.username 'tv' %}{% endif %}">TV Shows</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="row mt-3">
+    {% for item in items %}
+      <div class="col-md-3 mb-4">
+        {% if item.media_type == 'movie' %}
+          {% url 'movie_details' item.details.id as detail_url %}
+        {% else %}
+          {% url 'tv_details' item.details.id as detail_url %}
+        {% endif %}
+
+        <a href="{{ detail_url }}" class="text-decoration-none text-dark">
+          <div class="card h-100">
+            {% if item.details.poster_path %}
+              <img src="https://image.tmdb.org/t/p/w300{{ item.details.poster_path }}"
+                   class="card-img-top" loading="lazy" alt="">
+            {% endif %}
+            <div class="card-body">
+              <h5 class="card-title">
+                {% if item.details.title %}
+                  {{ item.details.title }}
+                {% else %}
+                  {{ item.details.name }}
+                {% endif %}
+              </h5>
+              <p class="card-text">
+                Status: <strong>{{ item.status|capfirst }}</strong>
+              </p>
+            </div>
+          </div>
+        </a>
+      </div>
+    {% empty %}
+      <p>No items found for this filter.</p>
+    {% endfor %}
+  </div>
+{% endblock %}

@@ -3,7 +3,6 @@
 {% block content %}
 <div class="container-fluid">
   <div class="row">
-    <!-- Постер -->
     <div class="col-md-4 col-lg-3">
       <div class="sticky-top" style="top: 20px;">
         {% if details.poster_path %}
@@ -16,6 +15,30 @@
                style="height: 750px;">
             <span class="text-light fs-5">No Image Available</span>
           </div>
+        {% endif %}
+      </div>
+
+      <div>
+        {% if user.is_authenticated %}
+          <form method="post"
+                action="{% url 'set_status' media_type=media_type media_id=details.id %}">
+            {% csrf_token %}
+            <select name="status"
+                    class="form-select"
+                    onchange="this.form.submit()">
+              <option value="" disabled {% if not user_item %}selected{% endif %}>Select status</option>
+              <option value="watched" {% if user_item and user_item.status == 'watched' %}selected{% endif %}>Watched</option>
+              <option value="planned" {% if user_item and user_item.status == 'planned' %}selected{% endif %}>Planned</option>
+              <option value="favorite" {% if user_item and user_item.status == 'favorite' %}selected{% endif %}>Favorite</option>
+              {% if user_item %}
+              <option value="delete">Delete status</option>
+              {% endif %}
+            </select>
+          </form>
+        {% else %}
+          <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-outline-secondary w-100">
+            Log in to select status
+          </a>
         {% endif %}
       </div>
     </div>
@@ -31,7 +54,6 @@
             {% endif %}
           </h1>
         </div>
-
         <div class="text-end">
           <div class="badge bg-warning text-dark fs-5 mb-2">
             ⭐ {{ details.vote_average|floatformat:1 }}/10
@@ -177,9 +199,7 @@
           {% endif %}
         </div>
       {% endif %}
-
     </div>
   </div>
 </div>
-
 {% endblock %}

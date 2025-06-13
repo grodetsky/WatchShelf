@@ -16,6 +16,13 @@ urlpatterns = [
 
     path('search/<str:media_type>', views.search_view, name='search'),
 
+    path('<str:media_type>/<int:media_id>/status/', views.set_status, name='set_status'),
+    path('<str:media_type>/<int:media_id>/remove/', views.remove_status, name='remove_status'),
+
+    path('profile/<str:username>/', views.profile_view, name='profile'),
+    path('profile/<str:username>/<str:status>/', views.profile_view, name='profile_status'),
+    path('profile/<str:username>/<str:status>/<str:media_type>/', views.profile_view, name='profile_filter'),
+
     path('signup/', views.signup_view, name='signup'),
     path('login/', auth_views.LoginView.as_view(template_name='library/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),

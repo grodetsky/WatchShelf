@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import MediaItem, UserItem
+from .models import MediaItem, UserItem, Collection
 
 
 @admin.register(MediaItem)
@@ -19,3 +19,18 @@ class UserItemAdmin(admin.ModelAdmin):
     )
     raw_id_fields = ('user', 'media_item')
     ordering = ('-updated_at',)
+
+
+@admin.register(Collection)
+class CollectionAdmin(admin.ModelAdmin):
+    list_display = ('name', 'user', 'media_count', 'created_at', 'updated_at')
+    list_filter = ('user', 'created_at')
+    search_fields = ('name', 'user__username')
+    raw_id_fields = ('user',)
+    filter_horizontal = ('media_items',)
+    ordering = ('-updated_at',)
+
+    def media_count(self, obj):
+        return obj.media_items.count()
+
+    media_count.short_description = 'Media Items'

@@ -5,7 +5,8 @@ from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from .forms import SignUpForm
 from .models import MediaItem, UserItem, Collection
-from .tmdb_service import get_media_by_category, search_media, get_total_pages, get_media_details, CATEGORIES
+from .tmdb_service import (get_media_by_category, search_media, get_media_by_genre, get_genre_name,
+                           get_total_pages, get_media_details, CATEGORIES)
 
 
 def validate_media_type(media_type):
@@ -22,6 +23,12 @@ def validate_media_id(media_id):
     if not isinstance(media_id, int) or media_id <= 0:
         raise Http404("Invalid media ID")
     return media_id
+
+
+def validate_genre_id(genre_id):
+    if not isinstance(genre_id, int) or genre_id <= 0:
+        raise Http404("Invalid genre ID")
+    return genre_id
 
 
 def validate_status(status):
@@ -105,6 +112,36 @@ def search_view(request, media_type):
         'next_page': page + 1 if page < total_pages else None,
     }
     return render(request, 'library/search.html', context)
+
+
+def genre_view(request, genre_id, media_type):
+    validate_media_type(media_type)
+    validate_genre_id(genre_id)
+
+    genre_name = get_genre_name(genre_id, media_type)
+    total_pages = get_total_pages(media_type, genre_id=genre_id)
+    try:
+        page = max(1, min(int(request.GET.get('page', 1)), total_pages))
+    except ValueError:
+        page = 1
+
+    media_list = get_media_by_genre(genre_id, media_type, page=page)
+    page_range = range(max(1, page - 2), min(total_pages, page + 2) + 1)
+
+    context = {
+        'media_type': media_type,
+        'genre_id': genre_id,
+        'genre_name': genre_name,
+        'media_list': media_list,
+        'current_page': page,
+        'total_pages': total_pages,
+        'page_range': page_range,
+        'has_previous': page > 1,
+        'has_next': page < total_pages,
+        'previous_page': page - 1 if page > 1 else None,
+        'next_page': page + 1 if page < total_pages else None,
+    }
+    return render(request, 'library/genre.html', context)
 
 
 def details_view(request, media_type, media_id):

@@ -1,5 +1,5 @@
 import logging
-from tmdbv3api import TMDb, Movie, TV
+from tmdbv3api import TMDb, Movie, TV, Genre, Discover
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
@@ -10,6 +10,8 @@ tmdb.language = "en"
 
 movie_api = Movie()
 tv_api = TV()
+genre_api = Genre()
+discover_api = Discover()
 
 MEDIA_TYPES = {
     'movie': movie_api,
@@ -82,14 +84,100 @@ def search_media(query, media_type='movie', page=1):
         return log_error(f"Error searching {media_type} for query '{query}': {e}", [])
 
 
-def get_total_pages(media_type='movie', category=None, query=None):
+def get_genres_list(media_type='movie'):
     try:
-        media_handler = get_media_handler(media_type)
+        if media_type not in MEDIA_TYPES:
+            raise ValueError(f"Invalid media type: {media_type}")
 
+        if media_type == 'movie':
+            results = genre_api.movie_list()
+        else:
+            results = genre_api.tv_list()
+
+        return [
+            {
+                'id': genre['id'],
+                'name': genre['name']
+            }
+            for genre in results['genres']
+        ]
+    except Exception as e:
+        return log_error(f"Error fetching genres for {media_type}: {e}", [])
+
+
+def get_media_by_genre(genre_id, media_type='movie', page=1):
+    try:
+        if media_type not in MEDIA_TYPES:
+            raise ValueError(f"Invalid media type: {media_type}")
+
+        page = max(1, min(page, MAX_PAGES))
+
+        if media_type == 'movie':
+            results = discover_api.discover_movies({
+                'with_genres': genre_id,
+                'page': page
+            })
+        else:
+            results = discover_api.discover_tv_shows({
+                'with_genres': genre_id,
+                'page': page
+            })
+
+        return [
+            {
+                'id': item.id,
+                'title': getattr(item, 'title', getattr(item, 'name', 'Unknown')),
+                'poster_path': item.poster_path
+            }
+            for item in results.results
+        ]
+    except Exception as e:
+        return log_error(f"Error fetching {media_type} for genre {genre_id} on page {page}: {e}", [])
+
+
+def get_genre_name(genre_id, media_type='movie'):
+    try:
+        if media_type not in MEDIA_TYPES:
+            raise ValueError(f"Invalid media type: {media_type}")
+
+        genres = get_genres_list(media_type)
+        for genre in genres:
+            if genre['id'] == genre_id:
+                return genre['name']
+
+        other_media_type = 'tv' if media_type == 'movie' else 'movie'
+        other_genres = get_genres_list(other_media_type)
+        for genre in other_genres:
+            if genre['id'] == genre_id:
+                return genre['name']
+
+        return f"Genre {genre_id}"
+    except Exception as e:
+        return log_error(f"Error fetching genre name for {genre_id}: {e}", f"Genre {genre_id}")
+
+
+def get_total_pages(media_type='movie', category=None, query=None, genre_id=None):
+    try:
         if query:
+            media_handler = get_media_handler(media_type)
             response = media_handler.search(query, page=1)
+        elif genre_id:
+            if media_type not in MEDIA_TYPES:
+                raise ValueError(f"Invalid media type: {media_type}")
+
+            if media_type == 'movie':
+                response = discover_api.discover_movies({
+                    'with_genres': genre_id,
+                    'page': 1
+                })
+            else:
+                response = discover_api.discover_tv_shows({
+                    'with_genres': genre_id,
+                    'page': 1
+                })
         else:
             validate_category(media_type, category)
+            media_handler = get_media_handler(media_type)
             category_method = getattr(media_handler, category)
             response = category_method(page=1)
 

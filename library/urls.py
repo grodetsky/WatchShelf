@@ -15,6 +15,8 @@ urlpatterns = [
 
     path('search/<str:media_type>', views.search_view, name='search'),
 
+    path('genre/<int:genre_id>/<str:media_type>/', views.genre_view, name='genre'),
+
     path('<str:media_type>/<int:media_id>/status/', views.set_status, name='set_status'),
     path('<str:media_type>/<int:media_id>/remove/', views.remove_status, name='remove_status'),
 

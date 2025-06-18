@@ -11,7 +11,7 @@
                class="img-fluid rounded shadow-lg mb-3"
                loading="lazy">
         {% else %}
-          <div class="bg-secondary rounded d-flex align-items-center justify-content-center mb-3" style="height: 750px;">
+          <div class="bg-secondary rounded d-flex align-items-center justify-content-center mb-3" style="height: 350px;">
             <span class="text-light fs-5">No Image Available</span>
           </div>
         {% endif %}
@@ -78,20 +78,6 @@
               </div>
             </div>
           </div>
-
-          <script>
-            document.addEventListener('DOMContentLoaded', function() {
-              const select = document.getElementById('collectionSelect');
-              select.addEventListener('change', function() {
-                if (this.value === 'create') {
-                  this.value = '';
-                  new bootstrap.Modal(document.getElementById('createCollectionModal')).show();
-                } else if (this.value) {
-                  document.getElementById('collectionForm').submit();
-                }
-              });
-            });
-          </script>
         {% else %}
           <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-outline-secondary w-100">Log in to select status</a>
         {% endif %}
@@ -150,7 +136,11 @@
         <div class="mb-4">
           <h5 class="fw-bold mb-3">Genres</h5>
           <div class="d-flex flex-wrap gap-2">
-            {% for genre in details.genres %}<span class="badge bg-primary fs-6">{{ genre.name }}</span>{% endfor %}
+            {% for genre in details.genres %}
+              <a href="{% url 'genre' genre.id media_type %}" class="text-decoration-none">
+                <span class="badge bg-primary fs-6">{{ genre.name }}</span>
+              </a>
+            {% endfor %}
           </div>
         </div>
       {% endif %}
@@ -202,4 +192,20 @@
     </div>
   </div>
 </div>
-{% endblock %}`
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const select = document.getElementById('collectionSelect');
+    select.addEventListener('change', function() {
+      if (this.value === 'create') {
+        this.value = '';
+        new bootstrap.Modal(document.getElementById('createCollectionModal')).show();
+      } else if (this.value) {
+        document.getElementById('collectionForm').submit();
+      }
+    });
+  });
+</script>
+{% endblock %}

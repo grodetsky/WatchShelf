@@ -11,12 +11,9 @@ class MediaItemAdmin(admin.ModelAdmin):
 
 @admin.register(UserItem)
 class UserItemAdmin(admin.ModelAdmin):
-    list_display = ('user', 'media_item', 'status', 'added_at', 'updated_at')
-    list_filter = ('status', 'media_item__media_type', 'user')
-    search_fields = (
-        'user__username',
-        'media_item__tmdb_id',
-    )
+    list_display = ('user', 'media_item', 'status', 'is_favorite', 'added_at', 'updated_at')
+    list_filter = ('status', 'media_item__media_type', 'user', 'is_favorite')
+    search_fields = ('user__username', 'media_item__tmdb_id')
     raw_id_fields = ('user', 'media_item')
     ordering = ('-updated_at',)
 

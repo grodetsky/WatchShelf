@@ -20,24 +20,31 @@ class MediaItem(models.Model):
 
 
 class UserItem(models.Model):
-    STATUS_WATCHED = 'watched'
     STATUS_PLANNED = 'planned'
-    STATUS_FAVORITE = 'favorite'
+    STATUS_WATCHING = 'watching'
+    STATUS_REWATCHING = 'rewatching'
+    STATUS_ON_HOLD = 'on_hold'
+    STATUS_DROPPED = 'dropped'
+    STATUS_COMPLETED = 'completed'
 
     STATUS_CHOICES = [
-        (STATUS_WATCHED, 'Watched'),
-        (STATUS_PLANNED, 'Planned'),
-        (STATUS_FAVORITE, 'Favorite'),
+        (STATUS_PLANNED, 'Plan to Watch'),
+        (STATUS_WATCHING, 'Watching'),
+        (STATUS_REWATCHING, 'Rewatching'),
+        (STATUS_ON_HOLD, 'On Hold'),
+        (STATUS_DROPPED, 'Dropped'),
+        (STATUS_COMPLETED, 'Completed'),
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     media_item = models.ForeignKey(MediaItem, on_delete=models.CASCADE)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES)
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, blank=True, null=True)
+    is_favorite = models.BooleanField(default=False)
     added_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ('user', 'media_item', 'status')
+        unique_together = ('user', 'media_item')
         ordering = ['-updated_at']
 
     def __str__(self):

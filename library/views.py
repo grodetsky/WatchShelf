@@ -213,6 +213,34 @@ def set_status(request, media_type, media_id):
 
 
 @login_required
+def toggle_favorite(request, media_type, media_id):
+    validate_media_type(media_type)
+    validate_media_id(media_id)
+
+    if request.method == 'POST':
+        with transaction.atomic():
+            media_item, created = MediaItem.objects.get_or_create(
+                tmdb_id=media_id,
+                media_type=media_type
+            )
+
+            user_item, created = UserItem.objects.get_or_create(
+                user=request.user,
+                media_item=media_item
+            )
+
+            user_item.is_favorite = not user_item.is_favorite
+
+            if not user_item.is_favorite and not user_item.status:
+                user_item.delete()
+                cleanup_unused_media_item(media_item)
+            else:
+                user_item.save()
+
+    return redirect(f"{media_type}_details", media_id=media_id)
+
+
+@login_required
 def remove_status(request, media_type, media_id):
     validate_media_type(media_type)
     validate_media_id(media_id)
@@ -248,15 +276,16 @@ def profile_view(request, username, status=None, media_type=None):
     if status in CATEGORIES and media_type is None:
         media_type, status = status, None
 
-    if status:
+    if status == 'favorites':
+        user_items = UserItem.objects.filter(user=request.user, is_favorite=True)
+    elif status:
         validate_status(status)
+        user_items = UserItem.objects.filter(user=request.user, status=status)
+    else:
+        user_items = UserItem.objects.filter(user=request.user)
+
     if media_type:
         validate_media_type(media_type)
-
-    user_items = UserItem.objects.filter(user=request.user)
-    if status:
-        user_items = user_items.filter(status=status)
-    if media_type:
         user_items = user_items.filter(media_item__media_type=media_type)
 
     items = []
@@ -266,6 +295,7 @@ def profile_view(request, username, status=None, media_type=None):
             items.append({
                 'details': details,
                 'status': user_item.status,
+                'is_favorite': user_item.is_favorite,
                 'media_type': user_item.media_item.media_type,
             })
 

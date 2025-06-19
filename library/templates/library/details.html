@@ -19,18 +19,31 @@
 
       <div class="mb-3">
         {% if user.is_authenticated %}
-          <form method="post" action="{% url 'set_status' media_type=media_type media_id=details.id %}">
+        <div class="d-flex align-items-stretch gap-2 mb-2">
+          <form method="post" action="{% url 'set_status' media_type=media_type media_id=details.id %}" class="flex-grow-1">
             {% csrf_token %}
-            <select name="status" class="form-select mb-2" onchange="this.form.submit()">
-              <option value="" disabled {% if not user_item %}selected{% endif %}>Select status</option>
-              <option value="watched" {% if user_item and user_item.status == 'watched' %}selected{% endif %}>Watched</option>
-              <option value="planned" {% if user_item and user_item.status == 'planned' %}selected{% endif %}>Planned</option>
-              <option value="favorite" {% if user_item and user_item.status == 'favorite' %}selected{% endif %}>Favorite</option>
-              {% if user_item %}
-                <option value="delete">Delete status</option>
+            <select name="status" class="form-select h-100" onchange="this.form.submit()">
+              <option value="" disabled {% if not user_item.status %}selected{% endif %}>Select status</option>
+              <option value="planned"    {% if user_item and user_item.status == 'planned'    %}selected{% endif %}>Planned</option>
+              <option value="watching"   {% if user_item and user_item.status == 'watching'   %}selected{% endif %}>Watching</option>
+              <option value="rewatching" {% if user_item and user_item.status == 'rewatching' %}selected{% endif %}>Rewatching</option>
+              <option value="on_hold"    {% if user_item and user_item.status == 'on_hold'    %}selected{% endif %}>On Hold</option>
+              <option value="dropped"    {% if user_item and user_item.status == 'dropped'    %}selected{% endif %}>Dropped</option>
+              <option value="completed"  {% if user_item and user_item.status == 'completed'  %}selected{% endif %}>Completed</option>
+              {% if user_item and user_item.status %}
+              <option value="delete">Clear status</option>
               {% endif %}
             </select>
           </form>
+
+          <form method="post" action="{% url 'toggle_favorite' media_type=media_type media_id=details.id %}" class="d-flex align-items-center">
+            {% csrf_token %}
+            <span role="button" onclick="this.closest('form').submit()" class="d-flex align-items-center text-decoration-none" style="cursor: pointer;">
+              <i class="bi {% if user_item and user_item.is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %}"
+                 style="font-size: 1.4rem; color: {% if user_item and user_item.is_favorite %}#dc3545{% else %}#6c757d{% endif %};"></i>
+            </span>
+          </form>
+        </div>
 
           <form method="post" action="{% url 'add_to_collection' media_type=media_type media_id=details.id %}" id="collectionForm">
             {% csrf_token %}

@@ -4,7 +4,7 @@
 
 <h2 class="mb-3">Search Results</h2>
 
-<ul class="nav nav-tabs mb-4">
+<ul class="nav nav-tabs mb-4" style="white-space: nowrap; font-size: 0.9rem;">
     <li class="nav-item">
         <a class="nav-link {% if media_type == 'movie' %}active{% endif %}"
             href="{% url 'search' 'movie' %}?query={{ query|urlencode }}"> Movies </a>

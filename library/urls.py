@@ -19,6 +19,7 @@ urlpatterns = [
 
     path('<str:media_type>/<int:media_id>/status/', views.set_status, name='set_status'),
     path('<str:media_type>/<int:media_id>/remove/', views.remove_status, name='remove_status'),
+    path('<str:media_type>/<int:media_id>/favorite/', views.toggle_favorite, name='toggle_favorite'),
 
     path('profile/<str:username>/', views.profile_view, name='profile'),
     path('profile/<str:username>/<str:status>/', views.profile_view, name='profile_status'),

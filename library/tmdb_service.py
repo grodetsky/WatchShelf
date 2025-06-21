@@ -1,5 +1,5 @@
 import logging
-from tmdbv3api import TMDb, Movie, TV, Genre, Discover
+from tmdbv3api import TMDb, Movie, TV, Genre, Discover, Person
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
@@ -12,6 +12,7 @@ movie_api = Movie()
 tv_api = TV()
 genre_api = Genre()
 discover_api = Discover()
+person_api = Person()
 
 MEDIA_TYPES = {
     'movie': movie_api,
@@ -192,3 +193,10 @@ def get_media_details(media_type, media_id):
         return media_handler.details(media_id, append_to_response="credits,aggregate_credits,videos,images")
     except Exception as e:
         return log_error(f"Error fetching details for {media_type} id {media_id}: {e}", None)
+
+
+def get_person_details(person_id):
+    try:
+        return person_api.details(person_id, append_to_response="combined_credits")
+    except Exception as e:
+        return log_error(f"Error fetching person details for id {person_id}: {e}", None)

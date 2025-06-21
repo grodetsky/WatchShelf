@@ -17,6 +17,8 @@ urlpatterns = [
     path('tv/<int:media_id>/media/', views.media_view, {'media_type': 'tv'}, name='tv_media'),
     path('tv/<str:category>/', views.catalog_view, {'media_type': 'tv'}, name='tv_category'),
 
+    path('person/<int:person_id>/', views.person_view, name='person'),
+
     path('search/<str:media_type>', views.search_view, name='search'),
 
     path('genre/<int:genre_id>/<str:media_type>/', views.genre_view, name='genre'),

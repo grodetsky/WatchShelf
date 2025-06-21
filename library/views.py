@@ -6,7 +6,7 @@ from django.db import transaction
 from .forms import SignUpForm
 from .models import MediaItem, UserItem, Collection
 from .tmdb_service import (get_media_by_category, search_media, get_media_by_genre, get_genre_name,
-                           get_total_pages, get_media_details, CATEGORIES)
+                           get_total_pages, get_media_details, get_person_details, CATEGORIES)
 
 
 def validate_media_type(media_type):
@@ -23,6 +23,12 @@ def validate_media_id(media_id):
     if not isinstance(media_id, int) or media_id <= 0:
         raise Http404("Invalid media ID")
     return media_id
+
+
+def validate_person_id(person_id):
+    if not isinstance(person_id, int) or person_id <= 0:
+        raise Http404("Invalid person ID")
+    return person_id
 
 
 def validate_genre_id(genre_id):
@@ -48,30 +54,54 @@ def get_category_display_name(category):
     return category_names.get(category, category.replace('_', ' ').title())
 
 
-def process_crew_data(crew_list):
-    crew_dict = {}
-    target_jobs = ['Director', 'Writer', 'Screenplay', 'Novel', 'Story']
+def process_crew_data(details, media_type):
+    crew = {}
+    important_jobs = ['Director', 'Writer', 'Screenplay', 'Novel', 'Story', 'Creator', 'Characters']
 
-    for crew_member in crew_list:
-        if crew_member.job in target_jobs:
-            name = crew_member.name
-            if name not in crew_dict:
-                crew_dict[name] = {
-                    'name': name,
-                    'profile_path': crew_member.profile_path,
+    if media_type == 'tv' and hasattr(details, 'created_by'):
+        for person in details.created_by:
+            crew.setdefault(person.name, {
+                'id': person.id,
+                'name': person.name,
+                'profile_path': getattr(person, 'profile_path', None),
+                'jobs': []
+            })['jobs'].append('Creator')
+
+    crew_list = (getattr(details, 'credits', None) or getattr(details, 'aggregate_credits', None))
+    if crew_list:
+        for person in getattr(crew_list, 'crew', []):
+            if person.job in important_jobs:
+                crew.setdefault(person.name, {
+                    'id': person.id,
+                    'name': person.name,
+                    'profile_path': getattr(person, 'profile_path', None),
                     'jobs': []
-                }
-            crew_dict[name]['jobs'].append(crew_member.job)
+                })['jobs'].append(person.job)
 
-    processed_crew = []
-    for person in crew_dict.values():
-        processed_crew.append({
-            'name': person['name'],
-            'profile_path': person['profile_path'],
-            'job': ', '.join(person['jobs'])
-        })
-
+    processed_crew = [
+        {
+            'id': p['id'],
+            'name': p['name'],
+            'profile_path': p['profile_path'],
+            'job': ', '.join(p['jobs']),
+        }
+        for p in crew.values()
+    ]
     return processed_crew
+
+
+def build_credits_list(credits):
+    items = []
+    for credit in credits.values():
+        acting = [r['character'] for r in credit['roles'] if r['role_type'] == 'Acting']
+        other = [r['character'] for r in credit['roles'] if r['role_type'] != 'Acting']
+        combined = []
+        if acting:
+            combined.append(' / '.join(acting))
+        combined.extend(other)
+        credit['combined_roles'] = ' / '.join(combined) if combined else 'Unknown Role'
+        items.append(credit)
+    return sorted(items, key=lambda c: c['release_date'] or '0000-00-00', reverse=True)
 
 
 def cleanup_unused_media_item(media_item):
@@ -200,10 +230,7 @@ def details_view(request, media_type, media_id):
         except MediaItem.DoesNotExist:
             media_in_collections = []
 
-        if hasattr(details, 'credits') and hasattr(details.credits, 'crew'):
-            processed_crew = process_crew_data(details.credits.crew)
-        elif hasattr(details, 'aggregate_credits') and hasattr(details.aggregate_credits, 'crew'):
-            processed_crew = process_crew_data(details.aggregate_credits.crew)
+        processed_crew = process_crew_data(details, media_type)
 
     context = {
         'media_type': media_type,
@@ -236,6 +263,48 @@ def cast_view(request, media_type, media_id):
         'cast_count': len(cast_list),
     }
     return render(request, 'library/cast.html', context)
+
+
+def person_view(request, person_id):
+    validate_person_id(person_id)
+
+    person = get_person_details(person_id)
+    if not person:
+        raise Http404(f"Person with ID={person_id} not found.")
+
+    movie_credits, tv_credits = {}, {}
+
+    for section, role_type, label in [
+        ('cast', 'character', 'Acting'),
+        ('crew', 'job', None),
+    ]:
+        for credit in getattr(getattr(person, 'combined_credits', None), section, []):
+            ctype = getattr(credit, 'media_type', None)
+            cid = credit.id
+            role = getattr(credit, role_type, '')
+            department = label or getattr(credit, 'department', 'Crew')
+
+            if not ctype or not role:
+                continue
+
+            credits = movie_credits if ctype == 'movie' else tv_credits
+            if cid not in credits:
+                credits[cid] = {
+                    'id': cid,
+                    'title': getattr(credit, 'title', getattr(credit, 'name', 'Unknown')),
+                    'poster_path': getattr(credit, 'poster_path', None),
+                    'release_date': getattr(credit, 'release_date', getattr(credit, 'first_air_date', '')),
+                    'vote_average': getattr(credit, 'vote_average', 0),
+                    'roles': []
+                }
+            credits[cid]['roles'].append({'character': role, 'role_type': department})
+
+    context = {
+        'person_details': person,
+        'movie_credits': build_credits_list(movie_credits),
+        'tv_credits': build_credits_list(tv_credits),
+    }
+    return render(request, 'library/person.html', context)
 
 
 def media_view(request, media_type, media_id):

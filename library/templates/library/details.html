@@ -211,22 +211,24 @@
         {% if processed_crew %}
           <div class="row g-3">
             {% for crew_member in processed_crew %}
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <div class="d-flex align-items-center">
-                  {% if crew_member.profile_path %}
-                    <img src="https://image.tmdb.org/t/p/w92{{ crew_member.profile_path }}"
-                         class="rounded-circle me-3"
-                         alt="{{ crew_member.name }}"
-                         style="width: 50px; height: 50px; object-fit: cover;">
-                  {% else %}
-                    <div class="bg-light rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                      <i class="bi bi-person-circle fs-4 text-muted"></i>
+                  <a href="{% url 'person' person_id=crew_member.id %}" class="text-decoration-none d-flex align-items-center">
+                    {% if crew_member.profile_path %}
+                      <img src="https://image.tmdb.org/t/p/w92{{ crew_member.profile_path }}"
+                           class="rounded-circle me-3"
+                           alt="{{ crew_member.name }}"
+                           style="width: 50px; height: 50px; object-fit: cover;">
+                    {% else %}
+                      <div class="bg-light rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <i class="bi bi-person-circle fs-4 text-muted"></i>
+                      </div>
+                    {% endif %}
+                    <div>
+                      <div class="fw-bold text-dark">{{ crew_member.name }}</div>
+                      <div class="text-muted small">{{ crew_member.job }}</div>
                     </div>
-                  {% endif %}
-                  <div>
-                    <div class="fw-bold">{{ crew_member.name }}</div>
-                    <div class="text-muted small">{{ crew_member.job }}</div>
-                  </div>
+                  </a>
                 </div>
               </div>
             {% endfor %}
@@ -253,28 +255,30 @@
                     {% if forloop.counter <= 9 %}
                       <div class="cast-item flex-shrink-0" style="min-width: 140px; max-width: 140px;">
                         <div class="card border-0 shadow-sm h-100">
-                          {% if actor.profile_path %}
-                            <img src="https://image.tmdb.org/t/p/w185{{ actor.profile_path }}"
-                                 class="card-img-top"
-                                 alt="{{ actor.name }}"
-                                 style="height: 200px; object-fit: cover; border-radius: 8px 8px 0 0;">
-                          {% else %}
-                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px; border-radius: 8px 8px 0 0;">
-                              <i class="bi bi-person-circle fs-1 text-muted"></i>
+                          <a href="{% url 'person' person_id=actor.id %}" class="text-decoration-none">
+                            {% if actor.profile_path %}
+                              <img src="https://image.tmdb.org/t/p/w185{{ actor.profile_path }}"
+                                   class="card-img-top"
+                                   alt="{{ actor.name }}"
+                                   style="height: 200px; object-fit: cover; border-radius: 8px 8px 0 0;">
+                            {% else %}
+                              <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px; border-radius: 8px 8px 0 0;">
+                                <i class="bi bi-person-circle fs-1 text-muted"></i>
+                              </div>
+                            {% endif %}
+                            <div class="card-body p-2">
+                              <h6 class="card-title small fw-bold mb-1 text-truncate text-dark" title="{{ actor.name }}">{{ actor.name }}</h6>
+                              <p class="card-text small text-muted mb-0" style="font-size: 0.75rem; line-height: 1.2; height: 2.4rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                                {% if actor.roles %}
+                                  {% for role in actor.roles %}
+                                    {{ role.character }}{% if not forloop.last %}, {% endif %}
+                                  {% endfor %}
+                                {% else %}
+                                  {{ actor.character|default:"" }}
+                                {% endif %}
+                              </p>
                             </div>
-                          {% endif %}
-                          <div class="card-body p-2">
-                            <h6 class="card-title small fw-bold mb-1 text-truncate" title="{{ actor.name }}">{{ actor.name }}</h6>
-                            <p class="card-text small text-muted mb-0" style="font-size: 0.75rem; line-height: 1.2; height: 2.4rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
-                              {% if actor.roles %}
-                                {% for role in actor.roles %}
-                                  {{ role.character }}{% if not forloop.last %}, {% endif %}
-                                {% endfor %}
-                              {% else %}
-                                {{ actor.character|default:"" }}
-                              {% endif %}
-                            </p>
-                          </div>
+                          </a>
                         </div>
                       </div>
                     {% endif %}
@@ -305,28 +309,30 @@
                     {% if forloop.counter <= 9 %}
                       <div class="cast-item flex-shrink-0" style="min-width: 140px; max-width: 140px;">
                         <div class="card border-0 shadow-sm h-100">
-                          {% if actor.profile_path %}
-                            <img src="https://image.tmdb.org/t/p/w185{{ actor.profile_path }}"
-                                 class="card-img-top"
-                                 alt="{{ actor.name }}"
-                                 style="height: 200px; object-fit: cover; border-radius: 8px 8px 0 0;">
-                          {% else %}
-                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px; border-radius: 8px 8px 0 0;">
-                              <i class="bi bi-person-circle fs-1 text-muted"></i>
+                          <a href="{% url 'person' person_id=actor.id %}" class="text-decoration-none">
+                            {% if actor.profile_path %}
+                              <img src="https://image.tmdb.org/t/p/w185{{ actor.profile_path }}"
+                                   class="card-img-top"
+                                   alt="{{ actor.name }}"
+                                   style="height: 200px; object-fit: cover; border-radius: 8px 8px 0 0;">
+                            {% else %}
+                              <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px; border-radius: 8px 8px 0 0;">
+                                <i class="bi bi-person-circle fs-1 text-muted"></i>
+                              </div>
+                            {% endif %}
+                            <div class="card-body p-2">
+                              <h6 class="card-title small fw-bold mb-1 text-truncate text-dark" title="{{ actor.name }}">{{ actor.name }}</h6>
+                              <p class="card-text small text-muted mb-0" style="font-size: 0.75rem; line-height: 1.2; height: 2.4rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                                {% if actor.roles %}
+                                  {% for role in actor.roles %}
+                                    {{ role.character }}{% if not forloop.last %}, {% endif %}
+                                  {% endfor %}
+                                {% else %}
+                                  {{ actor.character|default:"" }}
+                                {% endif %}
+                              </p>
                             </div>
-                          {% endif %}
-                          <div class="card-body p-2">
-                            <h6 class="card-title small fw-bold mb-1 text-truncate" title="{{ actor.name }}">{{ actor.name }}</h6>
-                            <p class="card-text small text-muted mb-0" style="font-size: 0.75rem; line-height: 1.2; height: 2.4rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
-                              {% if actor.roles %}
-                                {% for role in actor.roles %}
-                                  {{ role.character }}{% if not forloop.last %}, {% endif %}
-                                {% endfor %}
-                              {% else %}
-                                {{ actor.character|default:"" }}
-                              {% endif %}
-                            </p>
-                          </div>
+                          </a>
                         </div>
                       </div>
                     {% endif %}

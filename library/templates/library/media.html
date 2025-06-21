@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}{% if details.title %}{{ details.title }}{% else %}{{ details.name }}{% endif %}{% endblock %}
+{% block title %}{% firstof details.title details.name %} - Media{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'library/css/details.css' %}">

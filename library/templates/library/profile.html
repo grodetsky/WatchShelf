@@ -163,16 +163,13 @@
                      class="card-img-top" loading="lazy" alt="">
               {% endif %}
               <div class="card-body">
-                <h5 class="card-title">
+                <h5 class="card-title text-center">
                   {% if item.details.title %}
                     {{ item.details.title }}
                   {% else %}
                     {{ item.details.name }}
                   {% endif %}
                 </h5>
-                <p class="card-text">
-                  Status: <strong>{{ item.status|capfirst }}</strong>
-                </p>
               </div>
             </div>
           </a>

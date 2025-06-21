@@ -333,14 +333,24 @@ def set_status(request, media_type, media_id):
     selected_status = request.POST.get('status')
 
     with transaction.atomic():
-        media_item, created = MediaItem.objects.get_or_create(
+        media_item, _ = MediaItem.objects.get_or_create(
             tmdb_id=media_id,
             media_type=media_type
         )
 
         if selected_status == 'delete':
-            UserItem.objects.filter(user=request.user, media_item=media_item).delete()
-            cleanup_unused_media_item(media_item)
+            try:
+                user_item = UserItem.objects.get(user=request.user, media_item=media_item)
+            except UserItem.DoesNotExist:
+                pass
+            else:
+                if user_item.is_favorite:
+                    user_item.status = None
+                    user_item.save(update_fields=['status'])
+                else:
+                    user_item.delete()
+                    cleanup_unused_media_item(media_item)
+
         elif selected_status in dict(UserItem.STATUS_CHOICES):
             UserItem.objects.update_or_create(
                 user=request.user,

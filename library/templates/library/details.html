@@ -1,13 +1,20 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if details.title %}{{ details.title }}{% else %}{{ details.name }}{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'library/css/details.css' %}">
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
   <div class="row">
     <div class="col-md-4 col-lg-3">
-      <div class="sticky-top" style="top: 20px;">
+      <div>
         {% if details.poster_path %}
           <img src="https://image.tmdb.org/t/p/w500{{ details.poster_path }}"
-               alt="{% if details.title %}{{ details.title }}{% else %}{{ details.name }}{% endif %}"
+               alt="{% firstof details.title details.name %}"
                class="img-fluid rounded shadow-lg mb-3"
                loading="lazy">
         {% else %}
@@ -19,31 +26,31 @@
 
       <div class="mb-3">
         {% if user.is_authenticated %}
-        <div class="d-flex align-items-stretch gap-2 mb-2">
-          <form method="post" action="{% url 'set_status' media_type=media_type media_id=details.id %}" class="flex-grow-1">
-            {% csrf_token %}
-            <select name="status" class="form-select h-100" onchange="this.form.submit()">
-              <option value="" disabled {% if not user_item.status %}selected{% endif %}>Select status</option>
-              <option value="planned"    {% if user_item and user_item.status == 'planned'    %}selected{% endif %}>Planned</option>
-              <option value="watching"   {% if user_item and user_item.status == 'watching'   %}selected{% endif %}>Watching</option>
-              <option value="rewatching" {% if user_item and user_item.status == 'rewatching' %}selected{% endif %}>Rewatching</option>
-              <option value="on_hold"    {% if user_item and user_item.status == 'on_hold'    %}selected{% endif %}>On Hold</option>
-              <option value="dropped"    {% if user_item and user_item.status == 'dropped'    %}selected{% endif %}>Dropped</option>
-              <option value="completed"  {% if user_item and user_item.status == 'completed'  %}selected{% endif %}>Completed</option>
-              {% if user_item and user_item.status %}
-              <option value="delete">Clear status</option>
-              {% endif %}
-            </select>
-          </form>
+          <div class="d-flex align-items-stretch gap-2 mb-2">
+            <form method="post" action="{% url 'set_status' media_type=media_type media_id=details.id %}" class="flex-grow-1">
+              {% csrf_token %}
+              <select name="status" class="form-select h-100" onchange="this.form.submit()">
+                <option value="" disabled {% if not user_item.status %}selected{% endif %}>Select status</option>
+                <option value="planned"    {% if user_item and user_item.status == 'planned'    %}selected{% endif %}>Planned</option>
+                <option value="watching"   {% if user_item and user_item.status == 'watching'   %}selected{% endif %}>Watching</option>
+                <option value="rewatching" {% if user_item and user_item.status == 'rewatching' %}selected{% endif %}>Rewatching</option>
+                <option value="on_hold"    {% if user_item and user_item.status == 'on_hold'    %}selected{% endif %}>On Hold</option>
+                <option value="dropped"    {% if user_item and user_item.status == 'dropped'    %}selected{% endif %}>Dropped</option>
+                <option value="completed"  {% if user_item and user_item.status == 'completed'  %}selected{% endif %}>Completed</option>
+                {% if user_item and user_item.status %}
+                  <option value="delete">Clear status</option>
+                {% endif %}
+              </select>
+            </form>
 
-          <form method="post" action="{% url 'toggle_favorite' media_type=media_type media_id=details.id %}" class="d-flex align-items-center">
-            {% csrf_token %}
-            <span role="button" onclick="this.closest('form').submit()" class="d-flex align-items-center text-decoration-none" style="cursor: pointer;">
-              <i class="bi {% if user_item and user_item.is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %}"
-                 style="font-size: 1.4rem; color: {% if user_item and user_item.is_favorite %}#dc3545{% else %}#6c757d{% endif %};"></i>
-            </span>
-          </form>
-        </div>
+            <form method="post" action="{% url 'toggle_favorite' media_type=media_type media_id=details.id %}" class="d-flex align-items-center">
+              {% csrf_token %}
+              <span role="button" onclick="this.closest('form').submit()" class="d-flex align-items-center text-decoration-none" style="cursor: pointer;">
+                <i class="bi {% if user_item and user_item.is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %}"
+                   style="font-size: 1.4rem; color: {% if user_item and user_item.is_favorite %}#dc3545{% else %}#6c757d{% endif %};"></i>
+              </span>
+            </form>
+          </div>
 
           <form method="post" action="{% url 'add_to_collection' media_type=media_type media_id=details.id %}" id="collectionForm">
             {% csrf_token %}
@@ -52,54 +59,87 @@
               <option value="create">Create new collection +</option>
               <option disabled>──────────</option>
               {% for collection in user_collections %}
-                <option value="{{ collection.id }}">{{ collection.name }}{% if collection.id in media_in_collections %} ✓{% endif %}</option>
+                <option value="{{ collection.id }}">
+                  {{ collection.name }}{% if collection.id in media_in_collections %} ✓{% endif %}
+                </option>
               {% endfor %}
             </select>
           </form>
+        {% else %}
+          <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-outline-secondary w-100">
+            Log in to select status
+          </a>
+        {% endif %}
+      </div>
 
-          <div class="modal fade" id="createCollectionModal" tabindex="-1">
-            <div class="modal-dialog">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h5 class="modal-title">Create New Collection</h5>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form method="post" action="{% url 'create_collection' %}" id="createCollectionForm">
-                  <div class="modal-body">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                      <label for="collectionName" class="form-label">Collection Name</label>
-                      <input type="text" class="form-control" id="collectionName" name="name" required maxlength="200">
-                    </div>
+      <div class="card border-0 bg-light mb-3">
+        <div class="card-body">
+          {% if details.original_title or details.original_name %}
+            <div class="mb-2">
+              <div class="fw-semibold small">Original Title</div>
+              <div class="small">{% firstof details.original_title details.original_name %}</div>
+            </div>
+          {% endif %}
 
-                    <div class="form-check mb-3">
-                      <input class="form-check-input" type="checkbox" id="addCurrentItem" name="add_current_item" checked>
-                      <label class="form-check-label" for="addCurrentItem">
-                        Add "{% if details.title %}{{ details.title }}{% else %}{{ details.name }}{% endif %}" to this collection
-                      </label>
-                    </div>
+          {% if details.status %}
+            <div class="mb-2">
+              <div class="fw-semibold small">Status</div>
+              <div class="small">{{ details.status }}</div>
+            </div>
+          {% endif %}
 
-                    <input type="hidden" name="media_type" value="{{ media_type }}">
-                    <input type="hidden" name="media_id" value="{{ details.id }}">
-                    <input type="hidden" name="redirect_url" value="{{ request.get_full_path }}">
-                  </div>
-                  <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Create Collection</button>
-                  </div>
-                </form>
+          {% if details.networks %}
+            <div class="mb-2">
+              <div class="fw-semibold small">Networks</div>
+              <div class="small">
+                {% for network in details.networks %}
+                  {{ network.name }}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
               </div>
             </div>
-          </div>
-        {% else %}
-          <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-outline-secondary w-100">Log in to select status</a>
-        {% endif %}
+          {% endif %}
+
+          {% if details.type %}
+            <div class="mb-2">
+              <div class="fw-semibold small">Type</div>
+              <div class="small">{{ details.type }}</div>
+            </div>
+          {% endif %}
+
+          {% if details.original_language %}
+            <div class="mb-2">
+              <div class="fw-semibold small">Original Language</div>
+              <div class="small">{{ details.original_language|upper }}</div>
+            </div>
+          {% endif %}
+
+          {% if media_type == 'movie' %}
+            {% if details.budget %}
+              <div class="mb-2">
+                <div class="fw-semibold small">Budget</div>
+                <div class="small">${{ details.budget|floatformat:0 }}</div>
+              </div>
+            {% endif %}
+
+            {% if details.revenue %}
+              <div class="mb-2">
+                <div class="fw-semibold small">Revenue</div>
+                <div class="small">${{ details.revenue|floatformat:0 }}</div>
+              </div>
+            {% endif %}
+          {% endif %}
+        </div>
       </div>
     </div>
 
     <div class="col-md-8 col-lg-9">
-      <div class="d-flex justify-content-between align-items-start mb-4">
-        <div><h1 class="display-4 fw-bold mb-2">{% if details.title %}{{ details.title }}{% else %}{{ details.name }}{% endif %}</h1></div>
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <h1 class="display-6 fw-bold">{% firstof details.title details.name %}</h1>
+          {% if details.tagline %}
+            <p class="fst-italic text-secondary">{{ details.tagline }}</p>
+          {% endif %}
+        </div>
         <div class="text-end">
           <div class="badge bg-warning text-dark fs-5 mb-2">⭐ {{ details.vote_average|floatformat:1 }}/10</div>
           <div class="text-muted small">{{ details.vote_count }} votes</div>
@@ -111,36 +151,38 @@
           <div class="card border-0 bg-light h-100">
             <div class="card-body text-center">
               <h6 class="card-title text-muted">Release Date</h6>
-              <p class="card-text fw-bold">{% if details.release_date %}{{ details.release_date }}{% elif details.first_air_date %}{{ details.first_air_date }}{% else %}N/A{% endif %}</p>
+              <p class="card-text fw-bold">
+                {% firstof details.release_date details.first_air_date 'N/A' %}
+              </p>
             </div>
           </div>
         </div>
 
-        {% if media_type == 'movie' %}
-          <div class="col-sm-6 col-lg-3">
-            <div class="card border-0 bg-light h-100">
-              <div class="card-body text-center">
+        <div class="col-sm-6 col-lg-3">
+          <div class="card border-0 bg-light h-100">
+            <div class="card-body text-center">
+              {% if media_type == 'movie' %}
                 <h6 class="card-title text-muted">Runtime</h6>
-                <p class="card-text fw-bold">{% if details.runtime %}{{ details.runtime }} min{% else %}N/A{% endif %}</p>
-              </div>
+                <p class="card-text fw-bold">
+                  {% if details.runtime %}{{ details.runtime }} min{% else %}N/A{% endif %}
+                </p>
+              {% else %}
+                <h6 class="card-title text-muted">Seasons / Episodes</h6>
+                <p class="card-text fw-bold">
+                  S{{ details.number_of_seasons|default:"N/A" }}
+                  E{{ details.number_of_episodes|default:"N/A" }}
+                </p>
+              {% endif %}
             </div>
           </div>
-        {% else %}
-          <div class="col-sm-6 col-lg-3">
-            <div class="card border-0 bg-light h-100">
-              <div class="card-body text-center">
-                <h6 class="card-title text-muted">Seasons</h6>
-                <p class="card-text fw-bold">{{ details.number_of_seasons|default:"N/A" }}</p>
-              </div>
-            </div>
-          </div>
-          <div class="col-sm-6 col-lg-3">
-            <div class="card border-0 bg-light h-100">
-              <div class="card-body text-center">
-                <h6 class="card-title text-muted">Episodes</h6>
-                <p class="card-text fw-bold">{{ details.number_of_episodes|default:"N/A" }}</p>
-              </div>
-            </div>
+        </div>
+
+        {% if details.videos.results %}
+          <div class="col-sm-6 col-lg-3 d-flex align-items-center">
+            <a href="javascript:void(0)" class="text-decoration-none fw-semibold d-inline-flex align-items-center gap-1"
+               onclick="openVideoModal('{{ details.videos.results.0.key }}', '{{ details.videos.results.0.name|escapejs }}')">
+              <i class="bi bi-play-circle-fill fs-5 text-primary"></i> Watch Trailer
+            </a>
           </div>
         {% endif %}
       </div>
@@ -160,65 +202,397 @@
 
       <div class="mb-4">
         <h5 class="fw-bold mb-3">Overview</h5>
-        {% if details.overview %}<p class="fs-6 lh-lg">{{ details.overview }}</p>{% else %}<p class="text-muted fst-italic">Overview not available.</p>{% endif %}
+        {% if details.overview %}
+          <p class="fs-6 text-justify mb-4" style="text-align: justify;">{{ details.overview }}</p>
+        {% else %}
+          <p class="text-muted fst-italic text-justify mb-4" style="text-align: justify;">Overview not available.</p>
+        {% endif %}
+
+        {% if processed_crew %}
+          <div class="row g-3">
+            {% for crew_member in processed_crew %}
+              <div class="col-md-6">
+                <div class="d-flex align-items-center">
+                  {% if crew_member.profile_path %}
+                    <img src="https://image.tmdb.org/t/p/w92{{ crew_member.profile_path }}"
+                         class="rounded-circle me-3"
+                         alt="{{ crew_member.name }}"
+                         style="width: 50px; height: 50px; object-fit: cover;">
+                  {% else %}
+                    <div class="bg-light rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                      <i class="bi bi-person-circle fs-4 text-muted"></i>
+                    </div>
+                  {% endif %}
+                  <div>
+                    <div class="fw-bold">{{ crew_member.name }}</div>
+                    <div class="text-muted small">{{ crew_member.job }}</div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
       </div>
 
-      {% if media_type == 'tv' %}
-        <div class="row g-4 mb-4">
-          {% if details.created_by %}
-            <div class="col-md-6">
-              <h6 class="fw-bold">Created By</h6>
-              <ul class="list-unstyled">{% for creator in details.created_by %}<li>{{ creator.name }}</li>{% endfor %}</ul>
-            </div>
-          {% endif %}
-          {% if details.networks %}
-            <div class="col-md-6">
-              <h6 class="fw-bold">Networks</h6>
-              <ul class="list-unstyled">{% for network in details.networks %}<li>{{ network.name }}</li>{% endfor %}</ul>
-            </div>
-          {% endif %}
-          {% if details.episode_run_time %}
-            <div class="col-md-6">
-              <h6 class="fw-bold">Episode Runtime</h6>
-              <p>{% for runtime in details.episode_run_time %}{{ runtime }} min{% if not forloop.last %}, {% endif %}{% endfor %}</p>
-            </div>
+      {% if details.credits.cast or details.aggregate_credits.cast %}
+        <div class="mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">
+              {% if details.title %}Top Billed Cast{% else %}Series Cast{% endif %}
+            </h5>
+            <a href="{% url media_type|add:'_cast' media_id=details.id %}" class="text-decoration-none fw-semibold small">
+              View All Cast
+            </a>
+          </div>
+
+          {% if media_type == 'tv' and details.aggregate_credits.cast %}
+            {% with cast_list=details.aggregate_credits.cast %}
+              <div class="cast-carousel-container position-relative">
+                <div class="cast-carousel d-flex gap-3 overflow-auto pb-3" style="scroll-behavior: smooth; scrollbar-width: thin;">
+                  {% for actor in cast_list %}
+                    {% if forloop.counter <= 9 %}
+                      <div class="cast-item flex-shrink-0" style="min-width: 140px; max-width: 140px;">
+                        <div class="card border-0 shadow-sm h-100">
+                          {% if actor.profile_path %}
+                            <img src="https://image.tmdb.org/t/p/w185{{ actor.profile_path }}"
+                                 class="card-img-top"
+                                 alt="{{ actor.name }}"
+                                 style="height: 200px; object-fit: cover; border-radius: 8px 8px 0 0;">
+                          {% else %}
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px; border-radius: 8px 8px 0 0;">
+                              <i class="bi bi-person-circle fs-1 text-muted"></i>
+                            </div>
+                          {% endif %}
+                          <div class="card-body p-2">
+                            <h6 class="card-title small fw-bold mb-1 text-truncate" title="{{ actor.name }}">{{ actor.name }}</h6>
+                            <p class="card-text small text-muted mb-0" style="font-size: 0.75rem; line-height: 1.2; height: 2.4rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                              {% if actor.roles %}
+                                {% for role in actor.roles %}
+                                  {{ role.character }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                              {% else %}
+                                {{ actor.character|default:"" }}
+                              {% endif %}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+
+                  <div class="cast-item flex-shrink-0 d-flex align-items-center" style="min-width: 140px;">
+                    <a href="{% url media_type|add:'_cast' media_id=details.id %}" class="text-decoration-none d-flex flex-column align-items-center justify-content-center w-100 h-100 bg-light rounded shadow-sm view-all-card" style="height: 280px; transition: all 0.3s ease;">
+                      <i class="bi bi-arrow-right-circle fs-1 text-primary mb-2"></i>
+                      <span class="fw-semibold text-primary">View More</span>
+                      <span class="small text-muted">{{ cast_list|length }} actors</span>
+                    </a>
+                  </div>
+                </div>
+
+                <button class="btn btn-light border-0 shadow-sm cast-nav-btn cast-nav-prev position-absolute top-50 start-0 translate-middle-y" style="z-index: 10; width: 40px; height: 40px; border-radius: 50%; margin-left: -20px; display: none;">
+                  <i class="bi bi-chevron-left"></i>
+                </button>
+                <button class="btn btn-light border-0 shadow-sm cast-nav-btn cast-nav-next position-absolute top-50 end-0 translate-middle-y" style="z-index: 10; width: 40px; height: 40px; border-radius: 50%; margin-right: -20px;">
+                  <i class="bi bi-chevron-right"></i>
+                </button>
+              </div>
+            {% endwith %}
+          {% else %}
+            {% with cast_list=details.credits.cast %}
+              <div class="cast-carousel-container position-relative">
+                <div class="cast-carousel d-flex gap-3 overflow-auto pb-3" style="scroll-behavior: smooth; scrollbar-width: thin;">
+                  {% for actor in cast_list %}
+                    {% if forloop.counter <= 9 %}
+                      <div class="cast-item flex-shrink-0" style="min-width: 140px; max-width: 140px;">
+                        <div class="card border-0 shadow-sm h-100">
+                          {% if actor.profile_path %}
+                            <img src="https://image.tmdb.org/t/p/w185{{ actor.profile_path }}"
+                                 class="card-img-top"
+                                 alt="{{ actor.name }}"
+                                 style="height: 200px; object-fit: cover; border-radius: 8px 8px 0 0;">
+                          {% else %}
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px; border-radius: 8px 8px 0 0;">
+                              <i class="bi bi-person-circle fs-1 text-muted"></i>
+                            </div>
+                          {% endif %}
+                          <div class="card-body p-2">
+                            <h6 class="card-title small fw-bold mb-1 text-truncate" title="{{ actor.name }}">{{ actor.name }}</h6>
+                            <p class="card-text small text-muted mb-0" style="font-size: 0.75rem; line-height: 1.2; height: 2.4rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                              {% if actor.roles %}
+                                {% for role in actor.roles %}
+                                  {{ role.character }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                              {% else %}
+                                {{ actor.character|default:"" }}
+                              {% endif %}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+
+                  <div class="cast-item flex-shrink-0 d-flex align-items-center" style="min-width: 140px;">
+                    <a href="{% url media_type|add:'_cast' media_id=details.id %}" class="text-decoration-none d-flex flex-column align-items-center justify-content-center w-100 h-100 bg-light rounded shadow-sm view-all-card" style="height: 280px; transition: all 0.3s ease;">
+                      <i class="bi bi-arrow-right-circle fs-1 text-primary mb-2"></i>
+                      <span class="fw-semibold text-primary">View More</span>
+                      <span class="small text-muted">{{ cast_list|length }} actors</span>
+                    </a>
+                  </div>
+                </div>
+
+                <button class="btn btn-light border-0 shadow-sm cast-nav-btn cast-nav-prev position-absolute top-50 start-0 translate-middle-y" style="z-index: 10; width: 40px; height: 40px; border-radius: 50%; margin-left: -20px; display: none;">
+                  <i class="bi bi-chevron-left"></i>
+                </button>
+                <button class="btn btn-light border-0 shadow-sm cast-nav-btn cast-nav-next position-absolute top-50 end-0 translate-middle-y" style="z-index: 10; width: 40px; height: 40px; border-radius: 50%; margin-right: -20px;">
+                  <i class="bi bi-chevron-right"></i>
+                </button>
+              </div>
+            {% endwith %}
           {% endif %}
         </div>
       {% endif %}
 
-      {% if media_type == 'movie' %}
-        <div class="row g-4 mb-4">
-          {% if details.production_companies %}
-            <div class="col-md-6">
-              <h6 class="fw-bold">Production Companies</h6>
-              <ul class="list-unstyled">{% for company in details.production_companies %}<li>{{ company.name }}</li>{% endfor %}</ul>
+      <hr>
+
+      {% if details.videos.results or details.images.backdrops or details.images.posters %}
+        <div class="mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <h5 class="fw-bold mb-0">Media</h5>
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <ul class="nav nav-tabs mb-0 flex-grow-1" id="mediaTabs" role="tablist">
+                {% if details.videos.results %}
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="videos-tab" data-bs-toggle="tab" data-bs-target="#videos" type="button" role="tab">
+                      Videos <span class="badge bg-secondary ms-1">{{ details.videos.results|length }}</span>
+                    </button>
+                  </li>
+                {% endif %}
+                {% if details.images.backdrops %}
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link {% if not details.videos.results %}active{% endif %}" id="backdrops-tab" data-bs-toggle="tab" data-bs-target="#backdrops" type="button" role="tab">
+                      Backdrops <span class="badge bg-secondary ms-1">{{ details.images.backdrops|length }}</span>
+                    </button>
+                  </li>
+                {% endif %}
+                {% if details.images.posters %}
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link {% if not details.videos.results and not details.images.backdrops %}active{% endif %}" id="posters-tab" data-bs-toggle="tab" data-bs-target="#posters" type="button" role="tab">
+                      Posters <span class="badge bg-secondary ms-1">{{ details.images.posters|length }}</span>
+                    </button>
+                  </li>
+                {% endif %}
+              </ul>
+
+              <div id="viewAllLink" data-media-url="{% url media_type|add:'_media' media_id=details.id %}" class="mt-3 small" style="min-width: 130px; text-align: right;">
+              </div>
             </div>
-          {% endif %}
-          {% if details.production_countries %}
-            <div class="col-md-6">
-              <h6 class="fw-bold">Production Countries</h6>
-              <ul class="list-unstyled">{% for country in details.production_countries %}<li>{{ country.name }}</li>{% endfor %}</ul>
-            </div>
-          {% endif %}
+          </div>
+
+          <div class="tab-content" id="mediaTabContent">
+            {% if details.videos.results %}
+              <div class="tab-pane fade show active" id="videos" role="tabpanel">
+                <div class="media-carousel-container position-relative">
+                  <div class="media-carousel d-flex gap-3 overflow-auto pb-3" style="scroll-behavior: smooth; scrollbar-width: thin;">
+                    {% for video in details.videos.results %}
+                      {% if forloop.counter <= 6 %}
+                        <div class="media-item flex-shrink-0" style="min-width: 300px; max-width: 300px;">
+                          <div class="card border-0 shadow-sm h-100 position-relative" style="cursor: pointer;" onclick="openVideoModal('{{ video.key }}', '{{ video.name|escapejs }}')">
+                            <div class="position-relative" style="height: 170px; background: linear-gradient(45deg, #1a1a1a, #333); border-radius: 8px 8px 0 0;">
+                              <img src="https://img.youtube.com/vi/{{ video.key }}/hqdefault.jpg"
+                                   class="w-100 h-100"
+                                   style="object-fit: cover; border-radius: 8px 8px 0 0;"
+                                   alt="{{ video.name }}">
+                              <div class="position-absolute top-50 start-50 translate-middle">
+                                <i class="bi bi-play-circle-fill text-white" style="font-size: 3rem; opacity: 0.9;"></i>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      {% endif %}
+                    {% endfor %}
+
+                    {% if details.videos.results|length > 6 %}
+                      <div class="media-item flex-shrink-0 d-flex align-items-center" style="min-width: 300px;">
+                        <a href="{% url media_type|add:'_media' media_id=details.id %}?tab=videos" class="text-decoration-none d-flex flex-column align-items-center justify-content-center w-100 h-100 bg-light rounded shadow-sm view-all-card" style="height: 170px; transition: all 0.3s ease;">
+                          <i class="bi bi-collection-play fs-1 text-primary mb-2"></i>
+                          <span class="fw-semibold text-primary">View More</span>
+                          <span class="small text-muted">{{ details.videos.results|length }} videos</span>
+                        </a>
+                      </div>
+                    {% endif %}
+                  </div>
+
+                  <button class="btn btn-light border-0 shadow-sm media-nav-btn media-nav-prev position-absolute top-50 start-0 translate-middle-y" style="z-index: 10; width: 40px; height: 40px; border-radius: 50%; margin-left: -20px; display: none;">
+                    <i class="bi bi-chevron-left"></i>
+                  </button>
+                  <button class="btn btn-light border-0 shadow-sm media-nav-btn media-nav-next position-absolute top-50 end-0 translate-middle-y" style="z-index: 10; width: 40px; height: 40px; border-radius: 50%; margin-right: -20px;">
+                    <i class="bi bi-chevron-right"></i>
+                  </button>
+                </div>
+              </div>
+            {% endif %}
+            {% if details.images.backdrops %}
+              <div class="tab-pane fade {% if not details.videos.results %}show active{% endif %}" id="backdrops" role="tabpanel">
+                <div class="media-carousel-container position-relative">
+                  <div class="media-carousel d-flex gap-3 overflow-auto pb-3" style="scroll-behavior: smooth; scrollbar-width: thin;">
+                    {% for backdrop in details.images.backdrops %}
+                      {% if forloop.counter <= 6 %}
+                        <div class="media-item flex-shrink-0" style="min-width: 300px; max-width: 300px;">
+                          <div class="card border-0 shadow-sm h-100 position-relative" style="cursor: pointer;" onclick="openImageModal('https://image.tmdb.org/t/p/original{{ backdrop.file_path }}')">
+                            <img src="https://image.tmdb.org/t/p/w500{{ backdrop.file_path }}"
+                                 class="card-img"
+                                 style="height: 170px; object-fit: cover; border-radius: 8px;"
+                                 alt="Backdrop">
+                          </div>
+                        </div>
+                      {% endif %}
+                    {% endfor %}
+
+                    {% if details.images.backdrops|length > 6 %}
+                      <div class="media-item flex-shrink-0 d-flex align-items-center" style="min-width: 300px;">
+                        <a href="{% url media_type|add:'_media' media_id=details.id %}?tab=backdrops" class="text-decoration-none d-flex flex-column align-items-center justify-content-center w-100 h-100 bg-light rounded shadow-sm view-all-card" style="height: 170px; transition: all 0.3s ease;">
+                          <i class="bi bi-images fs-1 text-primary mb-2"></i>
+                          <span class="fw-semibold text-primary">View More</span>
+                          <span class="small text-muted">{{ details.images.backdrops|length }} backdrops</span>
+                        </a>
+                      </div>
+                    {% endif %}
+                  </div>
+
+                  <button class="btn btn-light border-0 shadow-sm media-nav-btn media-nav-prev position-absolute top-50 start-0 translate-middle-y" style="z-index: 10; width: 40px; height: 40px; border-radius: 50%; margin-left: -20px; display: none;">
+                    <i class="bi bi-chevron-left"></i>
+                  </button>
+                  <button class="btn btn-light border-0 shadow-sm media-nav-btn media-nav-next position-absolute top-50 end-0 translate-middle-y" style="z-index: 10; width: 40px; height: 40px; border-radius: 50%; margin-right: -20px;">
+                    <i class="bi bi-chevron-right"></i>
+                  </button>
+                </div>
+              </div>
+            {% endif %}
+            {% if details.images.posters %}
+              <div class="tab-pane fade {% if not details.videos.results and not details.images.backdrops %}show active{% endif %}" id="posters" role="tabpanel">
+                <div class="media-carousel-container position-relative">
+                  <div class="media-carousel d-flex gap-3 overflow-auto pb-3" style="scroll-behavior: smooth; scrollbar-width: thin;">
+                    {% for poster in details.images.posters %}
+                      {% if forloop.counter <= 9 %}
+                        <div class="media-item flex-shrink-0" style="min-width: 150px; max-width: 150px;">
+                          <div class="card border-0 shadow-sm h-100 position-relative" style="cursor: pointer;" onclick="openImageModal('https://image.tmdb.org/t/p/original{{ poster.file_path }}')">
+                            <img src="https://image.tmdb.org/t/p/w500{{ poster.file_path }}"
+                                 class="card-img"
+                                 style="height: 225px; object-fit: cover; border-radius: 8px;"
+                                 alt="Poster">
+                          </div>
+                        </div>
+                      {% endif %}
+                    {% endfor %}
+
+                    {% if details.images.posters|length > 9 %}
+                      <div class="media-item flex-shrink-0 d-flex align-items-center" style="min-width: 150px;">
+                        <a href="{% url media_type|add:'_media' media_id=details.id %}?tab=posters" class="text-decoration-none d-flex flex-column align-items-center justify-content-center w-100 h-100 bg-light rounded shadow-sm view-all-card" style="height: 225px; transition: all 0.3s ease;">
+                          <i class="bi bi-image fs-1 text-primary mb-2"></i>
+                          <span class="fw-semibold text-primary">View More</span>
+                          <span class="small text-muted">{{ details.images.posters|length }} posters</span>
+                        </a>
+                      </div>
+                    {% endif %}
+                  </div>
+
+                  <button class="btn btn-light border-0 shadow-sm media-nav-btn media-nav-prev position-absolute top-50 start-0 translate-middle-y" style="z-index: 10; width: 40px; height: 40px; border-radius: 50%; margin-left: -20px; display: none;">
+                    <i class="bi bi-chevron-left"></i>
+                  </button>
+                  <button class="btn btn-light border-0 shadow-sm media-nav-btn media-nav-next position-absolute top-50 end-0 translate-middle-y" style="z-index: 10; width: 40px; height: 40px; border-radius: 50%; margin-right: -20px;">
+                    <i class="bi bi-chevron-right"></i>
+                  </button>
+                </div>
+              </div>
+            {% endif %}
+          </div>
         </div>
       {% endif %}
+
+    </div>
+  </div>
+</div>
+
+{% if details.videos.results %}
+  <div class="modal fade" id="videoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 90vw; max-height: 90vh;">
+      <div class="modal-content bg-transparent border-0">
+        <div class="modal-header border-0 pb-2">
+          <h5 class="modal-title text-white" id="videoModalLabel">Video</h5>
+          <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-0 d-flex justify-content-center">
+          <div style="position: relative; width: 100%; max-width: 1200px; height: 0; padding-bottom: 52.25%; overflow: hidden; border-radius: 8px; background: #000;">
+            <iframe
+              id="videoIframe"
+              src=""
+              title="Video"
+              allowfullscreen
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; border-radius: 8px;"
+            ></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" id="imageModalDialog">
+    <div class="modal-content bg-transparent border-0">
+      <div class="modal-header border-0 pb-2">
+        <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0 d-flex justify-content-center">
+        <img id="modalImage"
+             src=""
+             alt="Media Image"
+             class="img-fluid"
+             style="border-radius: 8px; max-height: 85vh;">
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="createCollectionModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Create New Collection</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{% url 'create_collection' %}" id="createCollectionForm">
+        <div class="modal-body">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="collectionName" class="form-label">Collection Name</label>
+            <input type="text" class="form-control" id="collectionName" name="name" required maxlength="200">
+          </div>
+
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="addCurrentItem" name="add_current_item" checked>
+            <label class="form-check-label" for="addCurrentItem">
+              Add "{% firstof details.title details.name %}" to this collection
+            </label>
+          </div>
+
+          <input type="hidden" name="media_type" value="{{ media_type }}">
+          <input type="hidden" name="media_id" value="{{ details.id }}">
+          <input type="hidden" name="redirect_url" value="{{ request.get_full_path }}">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Collection</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const select = document.getElementById('collectionSelect');
-    select.addEventListener('change', function() {
-      if (this.value === 'create') {
-        this.value = '';
-        new bootstrap.Modal(document.getElementById('createCollectionModal')).show();
-      } else if (this.value) {
-        document.getElementById('collectionForm').submit();
-      }
-    });
-  });
-</script>
+<script src="{% static 'library/js/details.js' %}"></script>
 {% endblock %}

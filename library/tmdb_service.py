@@ -189,6 +189,6 @@ def get_total_pages(media_type='movie', category=None, query=None, genre_id=None
 def get_media_details(media_type, media_id):
     try:
         media_handler = get_media_handler(media_type)
-        return media_handler.details(media_id)
+        return media_handler.details(media_id, append_to_response="credits,aggregate_credits,videos,images")
     except Exception as e:
         return log_error(f"Error fetching details for {media_type} id {media_id}: {e}", None)

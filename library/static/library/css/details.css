@@ -1,0 +1,73 @@
+.cast-carousel {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.cast-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.cast-nav-btn {
+  opacity: 0.8;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.cast-nav-btn:hover {
+  opacity: 1;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.view-all-card:hover {
+  background-color: #f8f9fa !important;
+  transform: scale(1.02);
+}
+
+.cast-carousel-container:hover .cast-nav-btn {
+  opacity: 1;
+}
+
+.media-carousel {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.media-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.media-nav-btn {
+  opacity: 0.8;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.media-nav-btn:hover {
+  opacity: 1;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.media-carousel-container:hover .media-nav-btn {
+  opacity: 1;
+}
+
+.video-thumbnail {
+  position: relative;
+  background: linear-gradient(45deg, #1a1a1a, #333);
+}
+
+.video-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.9;
+  transition: opacity 0.3s ease;
+}
+
+.video-thumbnail:hover .video-overlay {
+  opacity: 1;
+}
+
+.media-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}

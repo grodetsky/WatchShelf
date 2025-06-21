@@ -48,6 +48,32 @@ def get_category_display_name(category):
     return category_names.get(category, category.replace('_', ' ').title())
 
 
+def process_crew_data(crew_list):
+    crew_dict = {}
+    target_jobs = ['Director', 'Writer', 'Screenplay', 'Novel', 'Story']
+
+    for crew_member in crew_list:
+        if crew_member.job in target_jobs:
+            name = crew_member.name
+            if name not in crew_dict:
+                crew_dict[name] = {
+                    'name': name,
+                    'profile_path': crew_member.profile_path,
+                    'jobs': []
+                }
+            crew_dict[name]['jobs'].append(crew_member.job)
+
+    processed_crew = []
+    for person in crew_dict.values():
+        processed_crew.append({
+            'name': person['name'],
+            'profile_path': person['profile_path'],
+            'job': ', '.join(person['jobs'])
+        })
+
+    return processed_crew
+
+
 def cleanup_unused_media_item(media_item):
     if (not UserItem.objects.filter(media_item=media_item).exists() and
             not media_item.collection_set.exists()):
@@ -155,6 +181,7 @@ def details_view(request, media_type, media_id):
     user_item = None
     user_collections = []
     media_in_collections = []
+    processed_crew = None
 
     if request.user.is_authenticated:
         try:
@@ -173,14 +200,57 @@ def details_view(request, media_type, media_id):
         except MediaItem.DoesNotExist:
             media_in_collections = []
 
+        if hasattr(details, 'credits') and hasattr(details.credits, 'crew'):
+            processed_crew = process_crew_data(details.credits.crew)
+        elif hasattr(details, 'aggregate_credits') and hasattr(details.aggregate_credits, 'crew'):
+            processed_crew = process_crew_data(details.aggregate_credits.crew)
+
     context = {
         'media_type': media_type,
         'details': details,
         'user_item': user_item,
         'user_collections': user_collections,
         'media_in_collections': media_in_collections,
+        'processed_crew': processed_crew,
     }
     return render(request, 'library/details.html', context)
+
+
+def cast_view(request, media_type, media_id):
+    validate_media_type(media_type)
+    validate_media_id(media_id)
+
+    details = get_media_details(media_type, media_id)
+    if not details:
+        raise Http404(f"{media_type.title()} with ID={media_id} not found.")
+
+    if media_type == 'tv':
+        cast_list = getattr(details.aggregate_credits, 'cast', [])
+    else:
+        cast_list = getattr(details.credits, 'cast', [])
+
+    context = {
+        'media_type': media_type,
+        'details': details,
+        'cast_list': cast_list,
+        'cast_count': len(cast_list),
+    }
+    return render(request, 'library/cast.html', context)
+
+
+def media_view(request, media_type, media_id):
+    validate_media_type(media_type)
+    validate_media_id(media_id)
+
+    details = get_media_details(media_type, media_id)
+    if not details:
+        raise Http404(f"{media_type.title()} with ID={media_id} not found.")
+
+    context = {
+        'media_type': media_type,
+        'details': details,
+    }
+    return render(request, 'library/media.html', context)
 
 
 @login_required

@@ -25,9 +25,9 @@
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="moviesDropdown">
                             <li><a class="dropdown-item" href="{% url 'movie_catalog' %}">Popular</a></li>
-                            <li><a class="dropdown-item" href="{% url 'movie_category' 'top_rated' %}">Top Rated</a></li>
-                            <li><a class="dropdown-item" href="{% url 'movie_category' 'upcoming' %}">Upcoming</a></li>
                             <li><a class="dropdown-item" href="{% url 'movie_category' 'now_playing' %}">Now Playing</a></li>
+                            <li><a class="dropdown-item" href="{% url 'movie_category' 'upcoming' %}">Upcoming</a></li>
+                            <li><a class="dropdown-item" href="{% url 'movie_category' 'top_rated' %}">Top Rated</a></li>
                         </ul>
                     </li>
 
@@ -38,9 +38,9 @@
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="tvDropdown">
                             <li><a class="dropdown-item" href="{% url 'tv_catalog' %}">Popular</a></li>
-                            <li><a class="dropdown-item" href="{% url 'tv_category' 'top_rated' %}">Top Rated</a></li>
-                            <li><a class="dropdown-item" href="{% url 'tv_category' 'on_the_air' %}">On The Air</a></li>
                             <li><a class="dropdown-item" href="{% url 'tv_category' 'airing_today' %}">Airing Today</a></li>
+                            <li><a class="dropdown-item" href="{% url 'tv_category' 'on_the_air' %}">On TV</a></li>
+                            <li><a class="dropdown-item" href="{% url 'tv_category' 'top_rated' %}">Top Rated</a></li>
                         </ul>
                     </li>
                 </ul>

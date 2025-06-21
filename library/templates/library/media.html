@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if details.title %}{{ details.title }}{% else %}{{ details.name }}{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'library/css/details.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <div class="flex-shrink-0">
+          {% if details.poster_path %}
+            <img src="https://image.tmdb.org/t/p/w92{{ details.poster_path }}"
+                 alt="{% if details.title %}{{ details.title }}{% else %}{{ details.name }}{% endif %}"
+                 class="img-fluid rounded shadow-sm"
+                 style="width: 80px; height: 120px; object-fit: cover;">
+          {% else %}
+            <div class="bg-secondary rounded d-flex align-items-center justify-content-center" style="width: 80px; height: 120px;">
+              <i class="bi bi-image text-light fs-4"></i>
+            </div>
+          {% endif %}
+        </div>
+        <div>
+          <h1 class="display-6 fw-bold mb-2">
+            {% if details.title %}{{ details.title }}{% else %}{{ details.name }}{% endif %}
+          </h1>
+          <a href="{% url media_type|add:'_details' media_id=details.id %}" class="text-decoration-none text-muted">
+            <i class="bi bi-arrow-left"></i> Back to main
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if details.videos.results or details.images.backdrops or details.images.posters %}
+  <div class="row mb-4">
+    <div class="col-12">
+      <ul class="nav nav-tabs" id="mediaTabs" role="tablist">
+        {% if details.videos.results %}
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="videos-tab" data-bs-toggle="tab" data-bs-target="#videos" type="button" role="tab">
+            Videos <span class="badge bg-secondary ms-1">{{ details.videos.results|length }}</span>
+          </button>
+        </li>
+        {% endif %}
+        {% if details.images.backdrops %}
+        <li class="nav-item" role="presentation">
+          <button class="nav-link {% if not details.videos.results %}active{% endif %}" id="backdrops-tab" data-bs-toggle="tab" data-bs-target="#backdrops" type="button" role="tab">
+            Backdrops <span class="badge bg-secondary ms-1">{{ details.images.backdrops|length }}</span>
+          </button>
+        </li>
+        {% endif %}
+        {% if details.images.posters %}
+        <li class="nav-item" role="presentation">
+          <button class="nav-link {% if not details.videos.results and not details.images.backdrops %}active{% endif %}" id="posters-tab" data-bs-toggle="tab" data-bs-target="#posters" type="button" role="tab">
+            Posters <span class="badge bg-secondary ms-1">{{ details.images.posters|length }}</span>
+          </button>
+        </li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="tab-content" id="mediaTabContent">
+    {% if details.videos.results %}
+    <div class="tab-pane fade show active" id="videos" role="tabpanel">
+      <div class="row g-4">
+        {% for video in details.videos.results %}
+          <div class="col-sm-6 col-md-4 col-lg-3">
+            <div class="card border-0 shadow-sm media-card h-100" onclick="openVideoModal('{{ video.key }}', '{{ video.name|escapejs }}')">
+              <div class="video-thumbnail" style="height: 200px; border-radius: 8px 8px 0 0;">
+                <img src="https://img.youtube.com/vi/{{ video.key }}/hqdefault.jpg"
+                     class="w-100 h-100"
+                     style="object-fit: cover; border-radius: 8px 8px 0 0;"
+                     alt="{{ video.name }}">
+                <div class="video-overlay">
+                  <i class="bi bi-play-circle-fill text-white" style="font-size: 3rem;"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if details.images.backdrops %}
+    <div class="tab-pane fade {% if not details.videos.results %}show active{% endif %}" id="backdrops" role="tabpanel">
+      <div class="row g-4">
+        {% for backdrop in details.images.backdrops %}
+          <div class="col-sm-6 col-md-4 col-lg-3">
+            <div class="card border-0 shadow-sm media-card h-100" onclick="openImageModal('https://image.tmdb.org/t/p/original{{ backdrop.file_path }}')">
+              <img src="https://image.tmdb.org/t/p/w500{{ backdrop.file_path }}"
+                   class="card-img"
+                   style="height: 200px; object-fit: cover; border-radius: 8px;"
+                   alt="Backdrop {{ forloop.counter }}">
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if details.images.posters %}
+    <div class="tab-pane fade {% if not details.videos.results and not details.images.backdrops %}show active{% endif %}" id="posters" role="tabpanel">
+      <div class="row g-4">
+        {% for poster in details.images.posters %}
+          <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
+            <div class="card border-0 shadow-sm media-card h-100" onclick="openImageModal('https://image.tmdb.org/t/p/original{{ poster.file_path }}')">
+              <img src="https://image.tmdb.org/t/p/w500{{ poster.file_path }}"
+                   class="card-img"
+                   style="height: 300px; object-fit: cover; border-radius: 8px;"
+                   alt="Poster {{ forloop.counter }}">
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% else %}
+  <div class="row">
+    <div class="col-12">
+      <div class="text-center py-5">
+        <i class="bi bi-collection-play display-1 text-muted mb-3"></i>
+        <h3 class="text-muted mb-2">No Media Available</h3>
+        <p class="text-muted">There are no videos or images available for this {% if media_type == 'movie' %}movie{% else %}TV show{% endif %}.</p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if details.videos.results %}
+  <div class="modal fade" id="videoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 90vw; max-height: 90vh;">
+      <div class="modal-content bg-transparent border-0">
+        <div class="modal-header border-0 pb-2">
+          <h5 class="modal-title text-white" id="videoModalLabel">Video</h5>
+          <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-0 d-flex justify-content-center">
+          <div style="position: relative; width: 100%; max-width: 1200px; height: 0; padding-bottom: 52.25%; overflow: hidden; border-radius: 8px; background: #000;">
+            <iframe
+              id="videoIframe"
+              src=""
+              title="Video"
+              allowfullscreen
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; border-radius: 8px;"
+            ></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" id="imageModalDialog">
+    <div class="modal-content bg-transparent border-0">
+      <div class="modal-header border-0 pb-2">
+        <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0 d-flex justify-content-center">
+        <img id="modalImage"
+             src=""
+             alt="Media Image"
+             class="img-fluid"
+             style="border-radius: 8px; max-height: 85vh;">
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'library/js/details.js' %}"></script>
+{% endblock %}

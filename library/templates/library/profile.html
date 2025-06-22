@@ -59,8 +59,6 @@
   </ul>
 </div>
 
-
-
   {% if show_collections %}
     <div class="d-flex justify-content-between align-items-center mb-4 ">
       <button type="button" class="btn btn-primary ms-auto" data-bs-toggle="modal" data-bs-target="#createCollectionModal">
@@ -150,29 +148,134 @@
     <div class="row mt-3">
       {% for item in items %}
         <div class="col-md-3 mb-4">
-          {% if item.media_type == 'movie' %}
-            {% url 'movie_details' item.details.id as detail_url %}
-          {% else %}
-            {% url 'tv_details' item.details.id as detail_url %}
-          {% endif %}
-
-          <a href="{{ detail_url }}" class="text-decoration-none text-dark">
-            <div class="card h-100">
-              {% if item.details.poster_path %}
+          <div class="card h-100">
+            {% if item.details.poster_path %}
+              <a href="{% if item.media_type == 'movie' %}{% url 'movie_details' item.details.id %}{% else %}{% url 'tv_details' item.details.id %}{% endif %}" class="text-decoration-none">
                 <img src="https://image.tmdb.org/t/p/w300{{ item.details.poster_path }}"
                      class="card-img-top" loading="lazy" alt="">
-              {% endif %}
-              <div class="card-body">
-                <h5 class="card-title text-center">
+              </a>
+            {% endif %}
+
+            <div class="card-body d-flex flex-column">
+              <h6 class="card-title text-center mb-3">
+                <a href="{% if item.media_type == 'movie' %}{% url 'movie_details' item.details.id %}{% else %}{% url 'tv_details' item.details.id %}{% endif %}" class="text-decoration-none text-dark">
                   {% if item.details.title %}
                     {{ item.details.title }}
                   {% else %}
                     {{ item.details.name }}
                   {% endif %}
-                </h5>
+                </a>
+              </h6>
+
+              <div class="d-flex flex-column gap-1 mt-auto">
+                <div class="d-flex align-items-center gap-2">
+                  <form method="post" action="{% url 'set_status' media_type=item.media_type media_id=item.details.id %}" class="flex-grow-1">
+                    {% csrf_token %}
+                    <input type="hidden" name="redirect_url" value="{{ request.get_full_path }}">
+                    <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                      <option value="" disabled {% if not item.status %}selected{% endif %}>Select status</option>
+                      <option value="planned"    {% if item.status == 'planned'    %}selected{% endif %}>Planned</option>
+                      <option value="watching"   {% if item.status == 'watching'   %}selected{% endif %}>Watching</option>
+                      <option value="rewatching" {% if item.status == 'rewatching' %}selected{% endif %}>Rewatching</option>
+                      <option value="on_hold"    {% if item.status == 'on_hold'    %}selected{% endif %}>On Hold</option>
+                      <option value="dropped"    {% if item.status == 'dropped'    %}selected{% endif %}>Dropped</option>
+                      <option value="completed"  {% if item.status == 'completed'  %}selected{% endif %}>Completed</option>
+                      {% if item.status %}
+                        <option value="delete">Clear status</option>
+                      {% endif %}
+                    </select>
+                  </form>
+
+                  <form method="post" action="{% url 'toggle_favorite' media_type=item.media_type media_id=item.details.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="redirect_url" value="{{ request.get_full_path }}">
+                    <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent" style="width: 32px; height: 32px;" title="Favorite">
+                      <i class="bi {% if item.is_favorite %}bi-heart-fill text-danger{% else %}bi-heart text-secondary{% endif %}" style="font-size: 1.3rem;"></i>
+                    </button>
+                  </form>
+
+                  <form method="post" action="{% url 'remove_status' media_type=item.media_type media_id=item.details.id %}" onsubmit="return confirm('Remove this item from your profile?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="redirect_url" value="{{ request.get_full_path }}">
+                    <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent" style="width: 32px; height: 32px;" title="Remove">
+                      <i class="bi bi-trash text-secondary" style="font-size: 1.3rem;"></i>
+                    </button>
+                  </form>
+                </div>
+
+                <div>
+                  <div class="dropdown w-100">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle w-100"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            style="font-size: 0.8rem;">
+                      Add to collection
+                    </button>
+                    <ul class="dropdown-menu w-100">
+                      <li>
+                        <button class="dropdown-item"
+                                data-bs-toggle="modal"
+                                data-bs-target="#createCollectionModal{{ item.details.id }}">
+                          <i class="bi bi-plus-circle me-2"></i>Create new collection
+                        </button>
+                      </li>
+                      {% if item.user_collections %}
+                        <li><hr class="dropdown-divider"></li>
+                        {% for collection in item.user_collections %}
+                          <li>
+                            <form method="post" action="{% url 'add_to_collection' media_type=item.media_type media_id=item.details.id %}">
+                              {% csrf_token %}
+                              <input type="hidden" name="redirect_url" value="{{ request.get_full_path }}">
+                              <input type="hidden" name="collection_id" value="{{ collection.id }}">
+                              <button type="submit" class="dropdown-item d-flex justify-content-between align-items-center">
+                                {{ collection.name }}
+                                {% if collection.id in item.media_in_collections %}
+                                  <i class="bi bi-check-circle-fill text-success"></i>
+                                {% endif %}
+                              </button>
+                            </form>
+                          </li>
+                        {% endfor %}
+                      {% endif %}
+                    </ul>
+                  </div>
+                </div>
               </div>
             </div>
-          </a>
+          </div>
+
+          <div class="modal fade" id="createCollectionModal{{ item.details.id }}" tabindex="-1">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title">Create New Collection</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" action="{% url 'create_collection' %}">
+                  <div class="modal-body">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                      <label for="collectionName{{ item.details.id }}" class="form-label">Collection Name</label>
+                      <input type="text" class="form-control" id="collectionName{{ item.details.id }}" name="name" required maxlength="200">
+                    </div>
+                    <div class="form-check mb-3">
+                      <input class="form-check-input" type="checkbox" id="addCurrentItem{{ item.details.id }}" name="add_current_item" checked>
+                      <label class="form-check-label" for="addCurrentItem{{ item.details.id }}">
+                        Add "{% firstof item.details.title item.details.name %}" to this collection
+                      </label>
+                    </div>
+                    <input type="hidden" name="media_type" value="{{ item.media_type }}">
+                    <input type="hidden" name="media_id" value="{{ item.details.id }}">
+                    <input type="hidden" name="redirect_url" value="{{ request.get_full_path }}">
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Collection</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
         </div>
       {% empty %}
         <p>No items found for this filter.</p>

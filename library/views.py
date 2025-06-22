@@ -358,6 +358,9 @@ def set_status(request, media_type, media_id):
                 defaults={'status': selected_status}
             )
 
+    redirect_url = request.POST.get('redirect_url') or request.META.get('HTTP_REFERER')
+    if redirect_url:
+        return redirect(redirect_url)
     return redirect(f"{media_type}_details", media_id=media_id)
 
 
@@ -368,12 +371,12 @@ def toggle_favorite(request, media_type, media_id):
 
     if request.method == 'POST':
         with transaction.atomic():
-            media_item, created = MediaItem.objects.get_or_create(
+            media_item, _ = MediaItem.objects.get_or_create(
                 tmdb_id=media_id,
                 media_type=media_type
             )
 
-            user_item, created = UserItem.objects.get_or_create(
+            user_item, _ = UserItem.objects.get_or_create(
                 user=request.user,
                 media_item=media_item
             )
@@ -386,6 +389,9 @@ def toggle_favorite(request, media_type, media_id):
             else:
                 user_item.save()
 
+    redirect_url = request.POST.get('redirect_url') or request.META.get('HTTP_REFERER')
+    if redirect_url:
+        return redirect(redirect_url)
     return redirect(f"{media_type}_details", media_id=media_id)
 
 
@@ -404,6 +410,9 @@ def remove_status(request, media_type, media_id):
         if deleted_count > 0:
             cleanup_unused_media_item(media_item)
 
+    redirect_url = request.POST.get('redirect_url') or request.META.get('HTTP_REFERER')
+    if redirect_url:
+        return redirect(redirect_url)
     return redirect(f"{media_type}_details", media_id=media_id)
 
 
@@ -437,15 +446,23 @@ def profile_view(request, username, status=None, media_type=None):
         validate_media_type(media_type)
         user_items = user_items.filter(media_item__media_type=media_type)
 
+    user_cols = list(Collection.objects.filter(user=request.user).only('id', 'name'))
+
     items = []
     for user_item in user_items.select_related('media_item'):
         details = get_media_details(user_item.media_item.media_type, user_item.media_item.tmdb_id)
         if details:
+            media_in_cols = list(
+                Collection.objects.filter(user=request.user, media_items=user_item.media_item)
+                .values_list('id', flat=True)
+            )
             items.append({
                 'details': details,
                 'status': user_item.status,
                 'is_favorite': user_item.is_favorite,
                 'media_type': user_item.media_item.media_type,
+                'user_collections': user_cols,
+                'media_in_collections': media_in_cols,
             })
 
     context = {
@@ -460,14 +477,28 @@ def profile_view(request, username, status=None, media_type=None):
 def collection_detail_view(request, collection_id):
     collection = get_object_or_404(Collection, id=collection_id, user=request.user)
 
+    user_cols = list(Collection.objects.filter(user=request.user).exclude(id=collection.id).only('id', 'name'))
+
     items = []
     for media_item in collection.media_items.all():
         details = get_media_details(media_item.media_type, media_item.tmdb_id)
         if details:
+            ui = UserItem.objects.filter(user=request.user, media_item=media_item).first()
+            status = ui.status if ui else None
+            is_favorite = ui.is_favorite if ui else False
+            media_in_cols = list(
+                Collection.objects.filter(user=request.user, media_items=media_item)
+                .values_list('id', flat=True)
+            )
+
             items.append({
                 'details': details,
                 'media_type': media_item.media_type,
                 'media_item': media_item,
+                'status': status,
+                'is_favorite': is_favorite,
+                'user_collections': user_cols,
+                'media_in_collections': media_in_cols,
             })
 
     context = {
@@ -502,7 +533,7 @@ def create_collection_view(request):
                 media_id = int(media_id)
                 validate_media_id(media_id)
 
-                media_item, created = MediaItem.objects.get_or_create(
+                media_item, _ = MediaItem.objects.get_or_create(
                     tmdb_id=media_id,
                     media_type=media_type
                 )
@@ -541,12 +572,15 @@ def add_to_collection_view(request, media_type, media_id):
 
     collection_id = request.POST.get('collection_id')
     if not collection_id:
+        redirect_url = request.POST.get('redirect_url') or request.META.get('HTTP_REFERER')
+        if redirect_url:
+            return redirect(redirect_url)
         return redirect(f"{media_type}_details", media_id=media_id)
 
     collection = get_object_or_404(Collection, id=collection_id, user=request.user)
 
     with transaction.atomic():
-        media_item, created = MediaItem.objects.get_or_create(
+        media_item, _ = MediaItem.objects.get_or_create(
             tmdb_id=media_id,
             media_type=media_type
         )
@@ -558,6 +592,9 @@ def add_to_collection_view(request, media_type, media_id):
             collection.media_items.add(media_item)
             collection.save(update_fields=['updated_at'])
 
+    redirect_url = request.POST.get('redirect_url') or request.META.get('HTTP_REFERER')
+    if redirect_url:
+        return redirect(redirect_url)
     return redirect(f"{media_type}_details", media_id=media_id)
 
 
@@ -574,6 +611,9 @@ def remove_from_collection_view(request, collection_id, media_id):
         collection.save(update_fields=['updated_at'])
         cleanup_unused_media_item(media_item)
 
+    redirect_url = request.POST.get('redirect_url') or request.META.get('HTTP_REFERER')
+    if redirect_url:
+        return redirect(redirect_url)
     return redirect('collection_detail', collection_id=collection_id)
 
 

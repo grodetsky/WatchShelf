@@ -26,45 +26,73 @@
 
       <div class="mb-3">
         {% if user.is_authenticated %}
-          <div class="d-flex align-items-stretch gap-2 mb-2">
-            <form method="post" action="{% url 'set_status' media_type=media_type media_id=details.id %}" class="flex-grow-1">
-              {% csrf_token %}
-              <select name="status" class="form-select h-100" onchange="this.form.submit()">
-                <option value="" disabled {% if not user_item.status %}selected{% endif %}>Select status</option>
-                <option value="planned"    {% if user_item and user_item.status == 'planned'    %}selected{% endif %}>Planned</option>
-                <option value="watching"   {% if user_item and user_item.status == 'watching'   %}selected{% endif %}>Watching</option>
-                <option value="rewatching" {% if user_item and user_item.status == 'rewatching' %}selected{% endif %}>Rewatching</option>
-                <option value="on_hold"    {% if user_item and user_item.status == 'on_hold'    %}selected{% endif %}>On Hold</option>
-                <option value="dropped"    {% if user_item and user_item.status == 'dropped'    %}selected{% endif %}>Dropped</option>
-                <option value="completed"  {% if user_item and user_item.status == 'completed'  %}selected{% endif %}>Completed</option>
-                {% if user_item and user_item.status %}
-                  <option value="delete">Clear status</option>
-                {% endif %}
-              </select>
-            </form>
+          <div class="d-flex flex-column gap-2">
+            <div class="d-flex align-items-center gap-2">
+              <form method="post" action="{% url 'set_status' media_type=media_type media_id=details.id %}" class="flex-grow-1">
+                {% csrf_token %}
+                <input type="hidden" name="redirect_url" value="{{ request.get_full_path }}">
+                <select name="status" class="form-select" onchange="this.form.submit()">
+                  <option value="" disabled {% if not user_item or not user_item.status %}selected{% endif %}>Select status</option>
+                  <option value="planned"    {% if user_item and user_item.status == 'planned'    %}selected{% endif %}>Planned</option>
+                  <option value="watching"   {% if user_item and user_item.status == 'watching'   %}selected{% endif %}>Watching</option>
+                  <option value="rewatching" {% if user_item and user_item.status == 'rewatching' %}selected{% endif %}>Rewatching</option>
+                  <option value="on_hold"    {% if user_item and user_item.status == 'on_hold'    %}selected{% endif %}>On Hold</option>
+                  <option value="dropped"    {% if user_item and user_item.status == 'dropped'    %}selected{% endif %}>Dropped</option>
+                  <option value="completed"  {% if user_item and user_item.status == 'completed'  %}selected{% endif %}>Completed</option>
+                  {% if user_item and user_item.status %}
+                    <option value="delete">Clear status</option>
+                  {% endif %}
+                </select>
+              </form>
 
-            <form method="post" action="{% url 'toggle_favorite' media_type=media_type media_id=details.id %}" class="d-flex align-items-center">
-              {% csrf_token %}
-              <span role="button" onclick="this.closest('form').submit()" class="d-flex align-items-center text-decoration-none" style="cursor: pointer;">
-                <i class="bi {% if user_item and user_item.is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %}"
-                   style="font-size: 1.4rem; color: {% if user_item and user_item.is_favorite %}#dc3545{% else %}#6c757d{% endif %};"></i>
-              </span>
-            </form>
+              <form method="post" action="{% url 'toggle_favorite' media_type=media_type media_id=details.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="redirect_url" value="{{ request.get_full_path }}">
+                <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent" style="width: 32px; height: 32px;" title="Favorite">
+                  <i class="bi {% if user_item and user_item.is_favorite %}bi-heart-fill text-danger{% else %}bi-heart text-secondary{% endif %}" style="font-size: 1.3rem;"></i>
+                </button>
+              </form>
+            </div>
+
+            <div>
+              <div class="dropdown w-100">
+                <button class="btn btn-outline-secondary btn-sm dropdown-toggle w-100"
+                        type="button"
+                        data-bs-toggle="dropdown"
+                        style="font-size: 0.9rem;">
+                  Add to collection
+                </button>
+                <ul class="dropdown-menu w-100">
+                  <li>
+                    <button class="dropdown-item"
+                            data-bs-toggle="modal"
+                            data-bs-target="#createCollectionModal">
+                      <i class="bi bi-plus-circle me-2"></i>Create new collection
+                    </button>
+                  </li>
+                  {% if user_collections %}
+                    <li><hr class="dropdown-divider"></li>
+                    {% for collection in user_collections %}
+                      <li>
+                        <form method="post" action="{% url 'add_to_collection' media_type=media_type media_id=details.id %}">
+                          {% csrf_token %}
+                          <input type="hidden" name="redirect_url" value="{{ request.get_full_path }}">
+                          <input type="hidden" name="collection_id" value="{{ collection.id }}">
+                          <button type="submit" class="dropdown-item d-flex justify-content-between align-items-center">
+                            {{ collection.name }}
+                            {% if collection.id in media_in_collections %}
+                              <i class="bi bi-check-circle-fill text-success"></i>
+                            {% endif %}
+                          </button>
+                        </form>
+                      </li>
+                    {% endfor %}
+                  {% endif %}
+                </ul>
+              </div>
+            </div>
+
           </div>
-
-          <form method="post" action="{% url 'add_to_collection' media_type=media_type media_id=details.id %}" id="collectionForm">
-            {% csrf_token %}
-            <select name="collection_id" class="form-select mb-2" id="collectionSelect">
-              <option value="" disabled selected>Add to collection</option>
-              <option value="create">Create new collection +</option>
-              <option disabled>──────────</option>
-              {% for collection in user_collections %}
-                <option value="{{ collection.id }}">
-                  {{ collection.name }}{% if collection.id in media_in_collections %} ✓{% endif %}
-                </option>
-              {% endfor %}
-            </select>
-          </form>
         {% else %}
           <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-outline-secondary w-100">
             Log in to select status

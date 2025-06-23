@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import Http404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.db import transaction
 from .forms import SignUpForm
 from .models import MediaItem, UserItem, Collection
@@ -52,6 +53,16 @@ def get_category_display_name(category):
         'airing_today': 'Airing Today'
     }
     return category_names.get(category, category.replace('_', ' ').title())
+
+
+def get_media_title(media_type, media_id):
+    try:
+        details = get_media_details(media_type, media_id)
+        if details:
+            return getattr(details, 'title', None) or getattr(details, 'name', 'Unknown')
+    except:
+        pass
+    return 'Unknown'
 
 
 def process_crew_data(details, media_type):
@@ -331,6 +342,7 @@ def set_status(request, media_type, media_id):
         raise Http404("Method not allowed")
 
     selected_status = request.POST.get('status')
+    media_title = get_media_title(media_type, media_id)
 
     with transaction.atomic():
         media_item, _ = MediaItem.objects.get_or_create(
@@ -347,16 +359,25 @@ def set_status(request, media_type, media_id):
                 if user_item.is_favorite:
                     user_item.status = None
                     user_item.save(update_fields=['status'])
+                    messages.warning(request, f'Status for "{media_title}" has been cleared')
                 else:
                     user_item.delete()
                     cleanup_unused_media_item(media_item)
+                    messages.error(request, f'"{media_title}" has been deleted from your library')
 
         elif selected_status in dict(UserItem.STATUS_CHOICES):
-            UserItem.objects.update_or_create(
+            user_item, created = UserItem.objects.update_or_create(
                 user=request.user,
                 media_item=media_item,
                 defaults={'status': selected_status}
             )
+
+            status_display = dict(UserItem.STATUS_CHOICES).get(selected_status, selected_status)
+
+            if created:
+                messages.success(request, f'"{media_title}" added to {status_display}')
+            else:
+                messages.success(request, f'Status for "{media_title}" updated to {status_display}')
 
     redirect_url = request.POST.get('redirect_url') or request.META.get('HTTP_REFERER')
     if redirect_url:
@@ -370,6 +391,8 @@ def toggle_favorite(request, media_type, media_id):
     validate_media_id(media_id)
 
     if request.method == 'POST':
+        media_title = get_media_title(media_type, media_id)
+
         with transaction.atomic():
             media_item, _ = MediaItem.objects.get_or_create(
                 tmdb_id=media_id,
@@ -386,8 +409,13 @@ def toggle_favorite(request, media_type, media_id):
             if not user_item.is_favorite and not user_item.status:
                 user_item.delete()
                 cleanup_unused_media_item(media_item)
+                messages.error(request, f'"{media_title}" has been removed from favorites')
             else:
                 user_item.save()
+                if user_item.is_favorite:
+                    messages.success(request, f'"{media_title}" added to favorites')
+                else:
+                    messages.warning(request, f'"{media_title}" removed from favorites')
 
     redirect_url = request.POST.get('redirect_url') or request.META.get('HTTP_REFERER')
     if redirect_url:
@@ -404,11 +432,13 @@ def remove_status(request, media_type, media_id):
         raise Http404("Method not allowed")
 
     media_item = get_object_or_404(MediaItem, tmdb_id=media_id, media_type=media_type)
+    media_title = get_media_title(media_type, media_id)
 
     with transaction.atomic():
         deleted_count, _ = UserItem.objects.filter(user=request.user, media_item=media_item).delete()
         if deleted_count > 0:
             cleanup_unused_media_item(media_item)
+            messages.error(request, f'"{media_title}" has been deleted from your library')
 
     redirect_url = request.POST.get('redirect_url') or request.META.get('HTTP_REFERER')
     if redirect_url:
@@ -515,9 +545,11 @@ def create_collection_view(request):
 
     name = request.POST.get('name', '').strip()
     if not name:
+        messages.error(request, 'Collection name is required')
         return redirect('profile_status', username=request.user.username, status='collections')
 
     if Collection.objects.filter(user=request.user, name=name).exists():
+        messages.error(request, f'Collection "{name}" already exists')
         return redirect('profile_status', username=request.user.username, status='collections')
 
     add_current_item = request.POST.get('add_current_item') == 'on'
@@ -526,6 +558,7 @@ def create_collection_view(request):
 
     with transaction.atomic():
         collection = Collection.objects.create(user=request.user, name=name)
+        messages.success(request, f'Collection "{name}" created successfully')
 
         if add_current_item and media_type and media_id:
             try:
@@ -539,6 +572,9 @@ def create_collection_view(request):
                 )
                 collection.media_items.add(media_item)
                 collection.save(update_fields=['updated_at'])
+
+                media_title = get_media_title(media_type, media_id)
+                messages.success(request, f'"{media_title}" added to collection "{name}"')
             except (ValueError, Http404):
                 pass
 
@@ -551,6 +587,7 @@ def delete_collection_view(request, collection_id):
         raise Http404("Method not allowed")
 
     collection = get_object_or_404(Collection, id=collection_id, user=request.user)
+    collection_name = collection.name
 
     with transaction.atomic():
         media_items_to_check = list(collection.media_items.all())
@@ -559,6 +596,7 @@ def delete_collection_view(request, collection_id):
         for media_item in media_items_to_check:
             cleanup_unused_media_item(media_item)
 
+    messages.error(request, f'Collection "{collection_name}" has been deleted')
     return redirect('profile_status', username=request.user.username, status='collections')
 
 
@@ -578,6 +616,7 @@ def add_to_collection_view(request, media_type, media_id):
         return redirect(f"{media_type}_details", media_id=media_id)
 
     collection = get_object_or_404(Collection, id=collection_id, user=request.user)
+    media_title = get_media_title(media_type, media_id)
 
     with transaction.atomic():
         media_item, _ = MediaItem.objects.get_or_create(
@@ -588,9 +627,11 @@ def add_to_collection_view(request, media_type, media_id):
         if media_item in collection.media_items.all():
             collection.media_items.remove(media_item)
             cleanup_unused_media_item(media_item)
+            messages.error(request, f'"{media_title}" removed from collection "{collection.name}"')
         else:
             collection.media_items.add(media_item)
             collection.save(update_fields=['updated_at'])
+            messages.success(request, f'"{media_title}" added to collection "{collection.name}"')
 
     redirect_url = request.POST.get('redirect_url') or request.META.get('HTTP_REFERER')
     if redirect_url:
@@ -606,10 +647,14 @@ def remove_from_collection_view(request, collection_id, media_id):
     collection = get_object_or_404(Collection, id=collection_id, user=request.user)
     media_item = get_object_or_404(MediaItem, tmdb_id=media_id)
 
+    media_title = get_media_title(media_item.media_type, media_item.tmdb_id)
+
     with transaction.atomic():
         collection.media_items.remove(media_item)
         collection.save(update_fields=['updated_at'])
         cleanup_unused_media_item(media_item)
+
+    messages.error(request, f'"{media_title}" removed from collection "{collection.name}"')
 
     redirect_url = request.POST.get('redirect_url') or request.META.get('HTTP_REFERER')
     if redirect_url:
@@ -623,6 +668,7 @@ def signup_view(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
+            messages.success(request, f'Welcome to WatchShelf, {user.username}!')
             return redirect("index")
     else:
         form = SignUpForm()
